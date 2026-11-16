@@ -7,7 +7,7 @@
   window.DataStore = { supported: function(){ return false; }, reconnectSilently: function(){ return Promise.resolve(null); } };   // NoteID's folder storage is never used here
   var PREVIEW = !!window.STUDENT_PREVIEW || /[?&]preview=1/.test(location.search);
   var CLASS_MODE = /[?&]class=1/.test(location.search);
-  var PREFIX = "ss:" + (PREVIEW ? "p:" : "");
+  var PREFIX = "ss:" + (PREVIEW ? "p:" : "") + (function(){ var d = location.pathname.replace(/[^\/]*$/, ""); return d && d !== "/" ? d + ":" : ""; })();   // X95: two sites under one domain (/piano/, /theory/) keep separate saved data
   window.SS_PREFIX = PREFIX;
   var PUBLISHED = { "noteid-levels-v1": "levels", "noteid-config-v1": "config", "noteid-lessons-v1": "lessons" };
   var cfg = null, resolveReady;

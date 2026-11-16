@@ -178,7 +178,7 @@
     ov.querySelector("button").addEventListener("click", function(){ enter(); });
     document.body.appendChild(ov);
   }
-  function hide(){ if (ov && !need()) return; if (ov) { ov.remove(); ov = null; } }
+  function hide(){ if (ov && !need()) { ov.remove(); ov = null; } }   // X95: the cover is taken away once full screen is on (it used to stay)
   function check(){ if (need()) show(); else hide(); }
   document.addEventListener("fullscreenchange", check);
   document.addEventListener("webkitfullscreenchange", check);

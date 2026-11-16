@@ -698,7 +698,7 @@
   function saveClassScores(){ dbSet("noteid-classscores-v1", classScores); }
   function saveTestScores(){ dbSet("noteid-testscores-v1", testScores); }
   function saveHistory(){ dbSet("noteid-history-v1", history); }
-  function addHistory(e){ history.push(e); if (history.length > 200) history = history.slice(-200); saveHistory(); }
+  function addHistory(e){ window.__ssLastHist = e; history.push(e); if (history.length > 200) history = history.slice(-200); saveHistory(); }
   function levelState(m, lv){ return config.states[m.id + ":" + lv.id] || "future"; }
   function typeStateSummary(m){
     var out = { learning: 0, testing: 0, catchup: 0 };
@@ -2328,6 +2328,7 @@
   }
   function startPractice(typeId, levelId, opts){
     if (!dataReady) return;
+    if (window.ssGateTest && !window.ssGateTest(opts, function(){ startPractice(typeId, levelId, opts); })) return;
     dropSession();
     fontsPromise.then(function(){
       view = "hub"; hubTypeId = typeId; hubLevelId = levelId;
@@ -2410,7 +2411,7 @@
     return '<i class="ti ' + m.icon + '" aria-hidden="true"></i> ' + m.label + (s.mode === "learn" ? " · help: " + STAGE_LABEL[learnState(s).stage] : "");
   }
   function scoreKindText(s){
-    return s.scoreKind === "student" ? "Saving to " + (s.student && s.student.name ? s.student.name : "the student") : (s.scoreKind === "real" ? "Class score" : "Practice score");
+    return s.scoreKind === "student" ? "Saved on this Chromebook" : (s.scoreKind === "real" ? "Class score" : "Practice score");
   }
   function updateHud(s){
     var a = $g("hudStats"), d = $g("hudMode");
@@ -2434,6 +2435,7 @@
     if (s.demo || !s.student || s.studentPractice) return;
     var sid = String(s.student.id || s.student.name), key = s.type.id + ":" + s.level.id;
     var r = results[sid] || (results[sid] = {});
+    window.__ssUndo = { sid: sid, key: key, prev: r[key] ? JSON.stringify(r[key]) : null, histT: 0 };
     var e = r[key] || (r[key] = { best: null, passed: false, last: null, updated: "" });
     e.last = { correct: s.correct, total: s.attempts, passed: passed };
     var better = !e.best || (passed && !e.passed) || (s.attempts && s.correct / s.attempts > (e.best.total ? e.best.correct / e.best.total : -1));
@@ -2442,6 +2444,7 @@
     e.updated = new Date().toISOString();
     saveResults();
   }
+  window.ssRejectTest = function(u){ try { if (!u) return; var r = results[u.sid]; if (r) { if (u.prev) r[u.key] = JSON.parse(u.prev); else delete r[u.key]; saveResults(); } if (u.histT) { history = history.filter(function(h){ return h.t !== u.histT; }); saveHistory(); } } catch (e) {} };
   function resetRound(s){ s.correct = 0; s.attempts = 0; s.misses = 0; s.streak = 0; s.best = 0; s.logged = false; }
 
   function finishCorrectTimer(s, ms){
@@ -2518,7 +2521,8 @@
     if (s.timer) clearTimeout(s.timer);
     saveStudentResult(s, passed);
     if (passed) postResult(s, true);
-    logSession(s, passed ? "passed" : "lost");
+    window.__ssLastHist = null; logSession(s, passed ? "passed" : "lost");
+    if (s.student && !s.studentPractice && !s.demo) { try { var u = window.__ssUndo ? JSON.parse(JSON.stringify(window.__ssUndo)) : null; if (u) u.histT = window.__ssLastHist ? window.__ssLastHist.t : 0; window.dispatchEvent(new CustomEvent("ss-finish", { detail: { test: true, title: levelTitle(s.type, s.level), correct: s.correct, total: s.attempts, passed: !!passed, undo: u } })); } catch (e) {} }
     if (passed) updateHud(s);
     s.phase = passed ? "won" : "lost";
     var game = $g("gameRoot");

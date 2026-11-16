@@ -2479,7 +2479,7 @@
       if (s.streak > s.best) s.best = s.streak;
       if (el && el.classList) { el.classList.remove("wrong", "picked"); el.classList.add("right"); }
       if (mt.answer === "staff" && staffAnswer) { staffAnswer.color = "good"; staffAnswer.card.classList.remove("bad"); staffAnswer.card.classList.add("good"); staffAnswer.redraw(); }
-      if (mt.answer === "key") revealAnswer($g("answerArea"), mt, q, lv, staffAnswer);
+      if (mt.answer === "key" && !(el && el.classList && el.classList.contains("piano-key"))) revealAnswer($g("answerArea"), mt, q, lv, staffAnswer);   // X97: a key the student clicked is the only key lit (the same note in another octave is not)
       if (needsBothNames(mt, lv, q)) revealAnswer($g("answerArea"), mt, q, lv, staffAnswer);
       promptArea.classList.remove("bad"); promptArea.classList.add("good");
       lockAnswers();

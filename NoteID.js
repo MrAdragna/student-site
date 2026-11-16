@@ -2355,6 +2355,7 @@
     var s = currentSession;
     s.q = makeQuestion(s.type, s.level, s.pool, s.q && s.q.name);
     s.qid++; s.plan = null;
+    try { window.dispatchEvent(new CustomEvent("ss-question", { detail: { title: levelTitle(s.type, s.level), mode: s.studentPractice ? "practice" : s.mode, demo: !!(s.demo || s.lesson) } })); } catch (e) {}
     s.phase = "answer"; s.h = {}; s.picked = []; s.firstTry = true; s.menuOpen = false; s.stepIdx = 0; s.steps = [];
     s.active = activeFor(s);
     if (s.mode === "learn" && learnState(s).stage === 3) {   // the first stage is a guided walk before the student may answer
@@ -2363,6 +2364,7 @@
     }
   }
   function recordAttempt(s, ok){
+    if (!s.demo && !s.lesson) { try { window.dispatchEvent(new CustomEvent("ss-attempt", { detail: { title: levelTitle(s.type, s.level), mode: s.studentPractice ? "practice" : s.mode, ok: !!ok } })); } catch (e) {} }
     if (s.studentPractice) { window.ssAttempts.push(s.student && (s.student.id || s.student.name), s.type.id + ":" + s.level.id, ok); return; }
     if (s.demo || s.lesson || s.scoreKind === "student") return;
     var bucket = scoreBucket(s.scoreKind), key = s.type.id + ":" + s.level.id;

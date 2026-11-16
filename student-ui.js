@@ -1,8 +1,8 @@
-/* student-ui.js (Student site v1, 13 Nov 2026, c12). Loaded AFTER NoteID.js. Student identity (locked to the Chromebook's owner, borrowing),
+/* student-ui.js (Student site v1, X96, 16 Nov 2026, c12). Loaded AFTER NoteID.js. Student identity (locked to the Chromebook's owner, borrowing),
    session timer, the "show my session" screen, today's focus message, and the teacher-only controls blocked. */
 (function(){
   "use strict";
-  var P = window.SS_PREFIX || "ss:";
+  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X96";
   function lg(k){ try { return localStorage.getItem(P + k); } catch (e) { return null; } }
   function ls(k, v){ try { localStorage.setItem(P + k, v); } catch (e) {} }
   function jget(k, d){ try { var v = JSON.parse(lg(k)); return v == null ? d : v; } catch (e) { return d; } }
@@ -12,6 +12,28 @@
   function hm(d){ return pad(d.getHours()) + ":" + pad(d.getMinutes()); }
   function slug(n){ return "s-" + String(n).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
   var cfg = {}, me = null;   // me = { name, owner, borrowed, since }
+  var PREVIEWISH = /[?&](preview|class)=1/.test(location.search);
+
+  // X96: the student view has no Note ID title, no Practice / History tabs, no name chip and no per-game full-screen button (the page's own full screen is used instead)
+  (function(){
+    var st = document.createElement("style");
+    st.textContent = ".topbar h1, #viewTabs, #studentChipWrap, #scoreChipWrap, #storageModeLabel, #maxBtn { display: none !important; }" +
+      ".topbar { justify-content: flex-end; } .topbar .spacer { display: none; }" +
+      ".ss-bar { margin-left: auto; }" +
+      "body.maxed .ss-bar { position: fixed; top: 6px; right: 10px; z-index: 100; }" +
+      ".ss-panel { display: grid; grid-template-columns: auto auto; gap: 2px 22px; align-items: center; background: #fff; border: 3px solid #3a2f8f; border-radius: 16px; padding: 6px 16px; box-shadow: 0 2px 8px rgba(40,30,120,.15); }" +
+      ".ss-pname { font-size: 28px; font-weight: 800; color: #2a2170; line-height: 1.1; }" +
+      ".ss-psub:empty { display: none; } .ss-psub { font-size: 13px; font-weight: 700; color: #7a4b00; }" +
+      ".ss-pmin { grid-row: 1 / span 2; grid-column: 2; text-align: center; line-height: 1; }" +
+      ".ss-pmin b { display: block; font-size: 54px; font-weight: 800; color: #3a2f8f; }" +
+      ".ss-pmin span { font-size: 13px; font-weight: 700; color: #555; }" +
+      ".ss-pst { display: block; font-size: 12px; font-weight: 800; margin-top: 2px; color: #999; } .ss-pst.on { color: #1a8a4a; }" +
+      ".ss-pmore { grid-column: 1; font-size: 12px; color: #555; }" +
+      ".ss-pbtns { grid-column: 1 / span 2; display: flex; gap: 8px; justify-content: flex-end; }" +
+      ".ss-pb { font: inherit; font-size: 12px; font-weight: 700; border: 1px solid #b9b3e8; background: #f4f2ff; color: #3a2f8f; border-radius: 999px; padding: 2px 10px; cursor: pointer; } .ss-pb.quiet { background: none; border-color: transparent; color: #999; }" +
+      "@media (max-width: 760px) { .ss-pmore, .ss-pb.quiet { display: none; } .ss-pname { font-size: 20px; } .ss-pmin b { font-size: 36px; } }";
+    (document.head || document.documentElement).appendChild(st);
+  })();
 
   // ---- teacher-only actions never run here (the buttons are hidden too) ----
   var BLOCK = /^(add-type|edit-type|delete-type|save-type|close-type|type-default|edit-level|add-level|add-after|save-level|delete-level.*|edit-states|close-states|arrange-games|close-arrange|group-on|group-off|mg-.*|open-lesson|cycle-state|hist-toggle|hist-del|clear-history|clear-class.*|clear-practice.*|reset-score|score-toggle|unlink-level|auto-link|refresh-curriculum|suggest-name|plan-type|clear-student|st-reset|add-chelper|del-chelper|helper-up|helper-down|helper-toggle)$/;
@@ -54,13 +76,58 @@
   function saveSession(){ if (!sess) return; sess.last = Date.now(); var all = jget("sessions", []), i = all.map(function(s){ return s.id; }).indexOf(sess.id); if (i >= 0) all[i] = sess; else all.push(sess); ls("sessions", JSON.stringify(all.slice(-200))); }
   function endSession(){ if (sess) { sess.closed = true; saveSession(); sess = null; } }
   ["pointerdown", "keydown", "pointermove", "touchstart"].forEach(function(n){ window.addEventListener(n, function(){ lastAct = Date.now(); }, true); });
+  // X96: the minutes count ONLY while a game is being played: the page is visible, in full screen (not in the teacher's preview), a real game (not a demo / the menu) is on screen,
+  // the round is not over, and something was touched in the last 45 seconds.
+  var curKey = null, curQ = 0, qAct = 0, gShown = 0;
+  function playing(){
+    if (!sess || !curKey) return false;
+    if (document.visibilityState !== "visible") return false;
+    if (!PREVIEWISH && !(document.fullscreenElement || document.webkitFullscreenElement)) return false;
+    if (Date.now() - lastAct > 45000) return false;
+    var sc = document.getElementById("stageCard");
+    if (!sc || !sc.classList.contains("playing") || !document.getElementById("gameRoot")) return false;
+    if (document.querySelector(".lost-overlay")) return false;
+    return true;
+  }
+  function gameRec(key, title, mode){ sess.games = sess.games || {}; return sess.games[key] || (sess.games[key] = { title: title, mode: mode, right: 0, wrong: 0, qsec: 0, qn: 0, sec: 0 }); }
+  window.addEventListener("ss-question", function(ev){
+    var d = ev.detail || {}; qAct = 0;
+    curKey = d.demo ? null : (d.title + "|" + d.mode); curQ = { title: d.title, mode: d.mode };
+  });
+  window.addEventListener("ss-attempt", function(ev){
+    var d = ev.detail || {}; if (!sess) return;
+    var g = gameRec(d.title + "|" + d.mode, d.title, d.mode);
+    if (d.ok) g.right++; else g.wrong++;
+    g.qsec += Math.min(qAct, 120); g.qn++; qAct = 0; saveSession();
+  });
+  function todayStats(){
+    var d = dstr(), t = { sec: 0, right: 0, wrong: 0, qsec: 0, qn: 0, games: {} };
+    jget("sessions", []).forEach(function(x){
+      if (x.date !== d || !me || x.name !== me.name) return;
+      t.sec += x.activeSec || 0;
+      Object.keys(x.games || {}).forEach(function(k){
+        var g = x.games[k], a = t.games[k] || (t.games[k] = { title: g.title, mode: g.mode, right: 0, wrong: 0, qsec: 0, qn: 0, sec: 0 });
+        a.right += g.right; a.wrong += g.wrong; a.qsec += g.qsec; a.qn += g.qn; a.sec += g.sec;
+        t.right += g.right; t.wrong += g.wrong; t.qsec += g.qsec; t.qn += g.qn;
+      });
+    });
+    return t;
+  }
+  function refresh(full){
+    var m = document.getElementById("ssMin"); if (m && sess) m.textContent = Math.floor(sess.activeSec / 60);
+    var st = document.getElementById("ssState"); if (st) { var on = playing(); st.textContent = on ? "counting" : "paused"; st.className = "ss-pst" + (on ? " on" : ""); }
+    if (full) {
+      var mo = document.getElementById("ssMore");
+      if (mo) { var t = todayStats(); mo.textContent = "Today: " + Math.floor(t.sec / 60) + " min \u00b7 " + t.right + " right \u00b7 " + t.wrong + " wrong" + (t.qn ? " \u00b7 " + Math.round(t.qsec / t.qn) + " s per question" : ""); }
+    }
+  }
   function startTick(){
     if (tick) return;
     tick = setInterval(function(){
       if (!sess) return;
-      if (document.visibilityState === "visible" && Date.now() - lastAct < 60000) sess.activeSec++;
-      if (sess.activeSec % 10 === 0) saveSession();
-      var b = document.getElementById("ssMin"); if (b) b.textContent = Math.floor(sess.activeSec / 60) + " min";
+      if (playing()) { sess.activeSec++; qAct++; if (curKey) gameRec(curKey, curQ.title, curQ.mode).sec++; }
+      if (sess.activeSec % 10 === 0 && playing()) saveSession();
+      gShown++; refresh(gShown % 5 === 0);
     }, 1000);
   }
   window.addEventListener("pagehide", function(){ saveSession(); });
@@ -79,11 +146,21 @@
     var host = document.getElementById("ssBar"); if (!host) return;
     if (!me) { host.innerHTML = ""; return; }
     var per = period();
-    host.innerHTML = '<button type="button" class="ss-chip' + (me.borrowed ? " borrowed" : "") + '" id="ssWho" title="Who is playing"><i class="ti ti-user" aria-hidden="true"></i> ' + esc(me.name) + (me.borrowed ? " (borrowing)" : "") + ' <i class="ti ti-chevron-down" aria-hidden="true"></i></button>' +
-      '<button type="button" class="ss-chip ss-show" id="ssShow"><i class="ti ti-checklist" aria-hidden="true"></i> My session <b id="ssMin">' + Math.floor(((sess && sess.activeSec) || 0) / 60) + ' min</b></button>' +
-      (per ? '<span class="ss-per">' + esc(per.name) + '</span>' : "");
-    document.getElementById("ssWho").onclick = whoMenu;
+    host.innerHTML = '<div class="ss-panel"><div><div class="ss-pname">' + esc(me.name) + '</div><div class="ss-psub">' + (me.borrowed ? "Borrowing " + esc(me.owner) + "'s Chromebook" : "") + (per ? (me.borrowed ? " &middot; " : "") + '<span style="color:#3a2f8f">' + esc(per.name) + '</span>' : "") + '</div></div>' +
+      '<div class="ss-pmin"><b id="ssMin">' + Math.floor(((sess && sess.activeSec) || 0) / 60) + '</b><span>active min this session</span><span class="ss-pst" id="ssState">paused</span></div>' +
+      '<div class="ss-pmore" id="ssMore"></div>' +
+      '<div class="ss-pbtns"><button type="button" class="ss-pb" id="ssShow">Details</button><button type="button" class="ss-pb quiet" id="ssTeach">teacher</button></div></div>';
     document.getElementById("ssShow").onclick = showSession;
+    document.getElementById("ssTeach").onclick = function(){ teacherGate(whoMenu); };
+    refresh(true);
+  }
+  // the name is not something a student can change: any change goes through the teacher PIN
+  function teacherGate(next){
+    var ov = overlay('<h2>Teacher PIN</h2><input type="password" id="ssPin0" maxlength="20" autocomplete="off"><div class="ss-err" id="ssPinErr0"></div><div class="ss-btns"><button type="button" class="ss-btn" id="ssPinX0">Cancel</button><button type="button" class="ss-btn primary" id="ssPinOk0">Go</button></div>');
+    var pi = ov.querySelector("#ssPin0"); pi.focus();
+    function go(){ hashPin(pi.value).then(function(h){ if (cfg.pinHash && h === cfg.pinHash) { ov.remove(); next(); } else ov.querySelector("#ssPinErr0").textContent = cfg.pinHash ? "That PIN is not right." : "No teacher PIN has been set for this site yet."; }); }
+    ov.querySelector("#ssPinOk0").onclick = go; pi.onkeydown = function(e){ if (e.key === "Enter") go(); };
+    ov.querySelector("#ssPinX0").onclick = function(){ ov.remove(); };
   }
   function overlay(html, cls){
     var o = document.createElement("div"); o.className = "ss-ov " + (cls || ""); o.innerHTML = '<div class="ss-card">' + html + '</div>'; document.body.appendChild(o);
@@ -135,14 +212,13 @@
   function showSession(){
     saveSession();
     var d = dstr(), per = period(), code = window.ssDailyCode(cfg.secret, d);
-    var rows = (jget("noteid-history-v1", []) || []).filter(function(h){ return dstr(new Date(h.t)) === d && (!h.student || h.student === me.name); });
-    var tot = 0; jget("sessions", []).forEach(function(s){ if (s.date === d && s.name === me.name) tot += s.activeSec; });
-    var table = rows.length ? '<table class="ss-tbl"><tr><th>Time</th><th>Game</th><th>Mode</th><th>Score</th></tr>' + rows.map(function(h){ return '<tr><td>' + hm(new Date(h.t)) + '</td><td>' + esc(h.title) + '</td><td>' + esc(h.mode) + '</td><td>' + h.correct + '/' + h.total + (h.result === "passed" ? " passed" : "") + '</td></tr>'; }).join("") + '</table>' : '<p class="ss-quiet">No games finished yet today.</p>';
+    var T = todayStats(), tot = T.sec, keys = Object.keys(T.games).sort(function(x, y){ return T.games[y].sec - T.games[x].sec; }).slice(0, 12);
+    var table = keys.length ? '<table class="ss-tbl"><tr><th>Game</th><th>Mode</th><th>Right</th><th>Wrong</th><th>s / question</th><th>Active</th></tr>' + keys.map(function(k){ var g = T.games[k]; return '<tr><td>' + esc(g.title) + '</td><td>' + esc(g.mode) + '</td><td>' + g.right + '</td><td>' + g.wrong + '</td><td>' + (g.qn ? Math.round(g.qsec / g.qn) : "-") + '</td><td>' + Math.floor(g.sec / 60) + ":" + pad(g.sec % 60) + '</td></tr>'; }).join("") + '</table>' : '<p class="ss-quiet">No questions answered yet today.</p>';
     var ov = overlay('<div class="ss-conf"><div class="ss-name">' + esc(me.name) + '</div>' + (me.borrowed ? '<div class="ss-tag">Borrowed: ' + esc(me.owner) + '\'s Chromebook</div>' : "") +
       '<div class="ss-line">' + new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }) + (per ? " &middot; " + esc(per.name) + " (" + per.start + "-" + per.end + ")" : " &middot; outside class time") + '</div>' +
       '<div class="ss-big"><span>' + Math.floor(((sess && sess.activeSec) || 0) / 60) + '</span> min active this session<br><small>' + Math.floor(tot / 60) + ' min today</small></div>' + table +
       (cfg.secret ? '<div class="ss-code">Code of the day <b>' + code + '</b><small>Your teacher checks this matches the one on the classroom screen.</small></div>' : "") +
-      '<div class="ss-line small">Started ' + (sess ? hm(new Date(sess.start)) : "") + ' &middot; shown ' + hm(new Date()) + '</div></div><div class="ss-btns"><button type="button" class="ss-btn primary" id="ssClose">Close</button></div>', "conf");
+      '<div class="ss-line small">Started ' + (sess ? hm(new Date(sess.start)) : "") + ' &middot; shown ' + hm(new Date()) + ' &middot; site version X96</div></div><div class="ss-btns"><button type="button" class="ss-btn primary" id="ssClose">Close</button></div>', "conf");
     ov.querySelector("#ssClose").onclick = function(){ ov.remove(); };
   }
 

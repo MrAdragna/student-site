@@ -1,8 +1,8 @@
-/* student-ui.js (Student site v1, X98, 16 Nov 2026, c12). Loaded AFTER NoteID.js. Student identity (locked to the Chromebook's owner, borrowing),
+/* student-ui.js (Student site v1, X99, 16 Nov 2026, c12). Loaded AFTER NoteID.js. Student identity (locked to the Chromebook's owner, borrowing),
    session timer, the "show my session" screen, today's focus message, and the teacher-only controls blocked. */
 (function(){
   "use strict";
-  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X98";
+  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X99";
   function lg(k){ try { return localStorage.getItem(P + k); } catch (e) { return null; } }
   function ls(k, v){ try { localStorage.setItem(P + k, v); } catch (e) {} }
   function jget(k, d){ try { var v = JSON.parse(lg(k)); return v == null ? d : v; } catch (e) { return d; } }
@@ -46,6 +46,17 @@
       ".ss-test { background: #fff1d6; border-left: 5px solid #e6a817; border-radius: 6px; padding: 4px 8px; margin-bottom: 4px; font-size: 12.5px; } .ss-test b, .ss-tb { background: #e6a817; color: #3d2a00; border-radius: 4px; padding: 0 5px; font-size: 10.5px; font-weight: 800; }" +
       ".ss-tbl tr.tst td { background: #fff1d6; } .ss-warn { background: #fde2e0; color: #8a1c14; border-radius: 6px; padding: 3px 8px; font-size: 12px; font-weight: 700; margin-bottom: 4px; } .ss-warn2 { color: #8a1c14; font-weight: 700; }" +
       ".ss-h { border: 1px solid #ddd; border-radius: 8px; margin-bottom: 5px; padding: 3px 8px; font-size: 12.5px; } .ss-h summary { cursor: pointer; } .ss-hl { color: #555; font-size: 11.5px; margin: 4px 0; }" +
+      ".ss-who { text-align: center; } .ss-psub { text-align: center; }" +
+      ".ss-pmin b.g { color: #1a8a4a; } .ss-pmin b.y { color: #c98a00; } .ss-pmin b.r { color: #c0392b; } .ss-pst.g { color: #1a8a4a; } .ss-pst.y { color: #c98a00; } .ss-pst.r { color: #c0392b; }" +
+      ".ss-tile b.y { color: #c98a00; } .ss-tile b.r { color: #c0392b; }" +
+      ".ss-end { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 100000; background: #c0392b; color: #fff; font-weight: 800; padding: 10px 22px; border-radius: 12px; font-size: 18px; box-shadow: 0 4px 16px rgba(0,0,0,.35); }" +
+      ".ss-msgs { flex: 1 1 240px; min-width: 200px; display: flex; flex-wrap: wrap; gap: 6px; align-items: stretch; } .ss-msg { flex: 1 1 180px; border: 3px solid var(--mc); background: color-mix(in srgb, var(--mc) 14%, #fff); border-radius: 12px; padding: 4px 10px; font-weight: 600; font-size: 15px; color: #1d1b2e; line-height: 1.25; } .gamebar .spacer { display: none; }" +
+      ".ss-q2 { font-size: 12px; color: #444; line-height: 1.5; margin-bottom: 3px; } .ss-q2 b { color: #2a2170; }" +
+      ".ss-strip { display: flex; align-items: flex-end; gap: 2px; height: 32px; margin: 3px 0 6px; overflow: hidden; } .ss-strip i { display: block; width: 6px; flex: 0 0 6px; border-radius: 2px 2px 0 0; } .ss-strip i.ok { background: #2fb067; } .ss-strip i.no { background: #d64545; } .ss-strip i.long { outline: 2px solid #e6a817; }" +
+      ".ss-test.practice { background: #dff4f4; border-left-color: #1a9ea0; } .ss-test.practice b { background: #1a9ea0; color: #fff; } .ss-tb.pt { background: #1a9ea0; color: #fff; } .ss-tbl tr.pt td { background: #dff4f4; }" +
+      ".ss-dayh { display: flex; justify-content: space-between; font-size: 12.5px; background: #ece9ff; border-radius: 6px; padding: 3px 8px; margin: 4px 0; color: #2a2170; } .ss-dayh span { font-weight: 700; }" +
+      ".ss-bd { font-size: 10.5px; font-weight: 800; border-radius: 4px; padding: 0 5px; } .ss-bd.cls { background: #1a8a4a; color: #fff; } .ss-bd.out { background: #bbb; color: #333; }" +
+      ".ss-h.cls { border-left: 5px solid #1a8a4a; background: #f1faf4; } .ss-h.out { border-left: 5px solid #bbb; }" +
       "@media (max-width: 900px) { body.ss-on { padding: 8px; } .ss-bar { position: static; width: auto; margin-bottom: 8px; } .ss-side { height: auto; } .ss-pname { font-size: 22px; } .ss-pmin b { font-size: 40px; } .ss-side .ss-tbl, .ss-pb { display: none; } }";
     (document.head || document.documentElement).appendChild(st);
   })();
@@ -79,20 +90,26 @@
     if (me && me.borrowed) toast(name + " is playing on " + o.name + "'s Chromebook");
   }
 
-  // ---- session timer (X98): every second of an open page goes into ONE of three buckets:
-  //      ACTIVE = a real game is on screen and being played; IDLE = on screen (full screen + focused during class) but not playing; OFF = off screen. ----
-  var sess = null, lastAct = Date.now(), tick = null;
-  var SFIELDS = ["openSec", "idleSec", "offSec", "lastOffSec", "lastOffAt", "fsExits", "fsLast", "synth"];
-  function newSess(){ var o = { id: Date.now().toString(36), name: me.name, owner: me.owner, borrowed: me.borrowed, date: dstr(), start: Date.now(), last: Date.now(), activeSec: 0, closed: false, games: {}, tests: [] }; SFIELDS.forEach(function(f){ o[f] = 0; }); return o; }
+  // ---- session timer (X99). Every second of an open page goes into ONE of three buckets:
+  //      ACTIVE = a real game is on screen and being played; IDLE = on screen (full screen + focused during class) but not playing; OFF = off screen.
+  //      A session belongs to ONE bucket of the day: the class period (from the Schedule app) or "outside class". It ends when class ends and a new one starts. ----
+  var sess = null, lastAct = Date.now(), tick = null, schedKnown = false;
+  var SFIELDS = ["openSec", "idleSec", "offSec", "lastOffSec", "lastOffAt", "fsExits", "fsLast", "synth", "stills"];
+  function hasSched(){ return schedKnown; }
+  function inClass(){ return !schedKnown || !!period(); }   // no class times known at all = always counts as class
+  function bucketNow(){ var per = period(); return dstr() + ":" + (inClass() ? "c" + (per ? per.start : "") : "o"); }
+  function newSess(){
+    var per = period(), o = { id: Date.now().toString(36), name: me.name, owner: me.owner, borrowed: me.borrowed, date: dstr(), start: Date.now(), last: Date.now(), activeSec: 0, closed: false, games: {}, tests: [], qlog: [], inClass: inClass(), pname: per ? per.name : "", bucket: bucketNow() };
+    SFIELDS.forEach(function(f){ o[f] = 0; }); return o;
+  }
   function startSession(){
     if (!me) return;
-    var all = jget("sessions", []), d = dstr(), found = null;
-    var per0 = period(), ps0 = per0 ? periodStartMs(per0) : 0;   // the session starts over at the beginning of each class period
-    all.forEach(function(s){ if (s.date === d && s.name === me.name && s.owner === me.owner && !s.closed && Date.now() - s.last < 20 * 60 * 1000 && s.start >= ps0) found = s; });
+    var all = jget("sessions", []), found = null, bk = bucketNow();
+    all.forEach(function(s){ if (s.bucket === bk && s.name === me.name && s.owner === me.owner && !s.closed && (s.inClass || Date.now() - s.last < 20 * 60 * 1000)) found = s; });
     sess = found || newSess();
-    SFIELDS.forEach(function(f){ if (sess[f] == null) sess[f] = 0; }); sess.games = sess.games || {}; sess.tests = sess.tests || [];
+    SFIELDS.forEach(function(f){ if (sess[f] == null) sess[f] = 0; }); sess.games = sess.games || {}; sess.tests = sess.tests || []; sess.qlog = sess.qlog || [];
     if (!found) { all.push(sess); ls("sessions", JSON.stringify(all.slice(-400))); }
-    prevState = "off"; prevKey = null; lastTickT = Date.now();
+    prevState = "off"; prevKey = null; lastTickT = Date.now(); pausedSince = 0;
   }
   function saveSession(){ if (!sess) return; sess.last = Date.now(); var all = jget("sessions", []), i = all.map(function(s){ return s.id; }).indexOf(sess.id); if (i >= 0) all[i] = sess; else all.push(sess); ls("sessions", JSON.stringify(all.slice(-400))); }
   function endSession(){ if (sess) { account(); sess.closed = true; saveSession(); sess = null; } }
@@ -103,8 +120,7 @@
     var sc = document.getElementById("stageCard"); if (sc && sc.classList.contains("playing")) sess.synth = (sess.synth || 0) + 1;
   }, true);
 
-  var curKey = null, curQ = { title: "", mode: "" }, qWall = 0, gShown = 0, lastQ = 0, fsSince = 0, fsGone = 0, rollN = 0, lastTickT = Date.now(), prevState = "off", prevKey = null, cfgReady = false;
-  function inClass(){ return !cfg.schedule || !cfg.schedule.length || !!period(); }   // no schedule typed into the panel = always counts as class
+  var curKey = null, curQ = { title: "", mode: "" }, qWall = 0, gShown = 0, fsSince = 0, fsGone = 0, lastTickT = Date.now(), prevState = "off", prevKey = null, cfgReady = false, pausedSince = 0;
   window.ssInClass = function(){ return cfgReady && inClass(); };
   function fsOk(){
     if (document.visibilityState !== "visible") return false;
@@ -119,11 +135,11 @@
   }
   function playing(){
     if (!sess || !curKey || !fsOk() || !gameOnScreen()) return false;
-    if (document.querySelector(".ss-ov")) return false;   // a PIN box is open
-    if (Date.now() - lastAct > 45000 || Date.now() - lastQ > 90000) return false;
+    if (document.querySelector(".ss-ov")) return false;   // a PIN box or the "Still practicing?" box is open
     return true;
   }
   function gameRec(key, title, mode){ sess.games = sess.games || {}; return sess.games[key] || (sess.games[key] = { title: title, mode: mode, right: 0, wrong: 0, qsec: 0, qn: 0, sec: 0, rapid: 0, last: 0 }); }
+  function modeName(m){ return (m === "test" && window.__ssTestKind === "practice") ? "practice test" : m; }
   // account(): puts the time since the last call into the bucket the page was in UNTIL NOW, then works out the bucket it is in from now on
   function account(){
     var now = Date.now(), dt = (now - lastTickT) / 1000; lastTickT = now;
@@ -135,64 +151,129 @@
     else if (prevState === "idle") sess.idleSec += dt; else sess.offSec += dt;
     var inNow = fsOk(), pl = playing();
     prevState = pl ? "play" : (inNow ? "idle" : "off"); prevKey = pl ? curKey : null;
+    if (pl) pausedSince = 0; else if (!pausedSince) pausedSince = now;
     if (inNow && !fsSince) { fsSince = now; if (fsGone) { sess.lastOffSec = (now - fsGone) / 1000; sess.lastOffAt = fsGone; } fsGone = 0; }
-    else if (!inNow && fsSince) { fsSince = 0; fsGone = now; sess.fsExits++; sess.fsLast = now; saveSession(); }
-    else if (!inNow && !fsGone && !sess.fsExits) fsGone = 0;
+    else if (!inNow && fsSince) {
+      fsSince = 0; fsGone = now; sess.fsExits++; sess.fsLast = now; saveSession();
+      // a TEST that leaves full screen (or the window) during class is stopped, not paused
+      if (!PREVIEWISH && inClass() && curQ && curQ.mode === "test" && gameOnScreen() && !document.querySelector(".ss-ov")) stopTestLeft("left full screen");
+    }
   }
   ["visibilitychange", "fullscreenchange", "webkitfullscreenchange"].forEach(function(n){ document.addEventListener(n, function(){ account(); }); });
   window.addEventListener("blur", function(){ account(); }); window.addEventListener("focus", function(){ account(); });
   window.addEventListener("ss-question", function(ev){
-    var d = ev.detail || {};
-    curKey = d.demo ? null : (d.title + "|" + d.mode); curQ = { title: d.title, mode: d.mode };
-    qWall = Date.now(); lastQ = qWall; account();
+    var d = ev.detail || {}, m = modeName(d.mode);
+    curKey = d.demo ? null : (d.title + "|" + m); curQ = { title: d.title, mode: d.mode };
+    qWall = Date.now(); account();
   });
   window.addEventListener("ss-attempt", function(ev){
     var d = ev.detail || {}; if (!sess) return;
-    var g = gameRec(d.title + "|" + d.mode, d.title, d.mode), wall = Math.min(7200, (Date.now() - (qWall || Date.now())) / 1000);   // how long the question was ON SCREEN, active or not
+    var m = modeName(d.mode), g = gameRec(d.title + "|" + m, d.title, m), wall = Math.min(7200, (Date.now() - (qWall || Date.now())) / 1000);   // how long the question was ON SCREEN, active or not
     if (d.ok) g.right++; else g.wrong++;
     g.qsec += wall; g.qn++; if (wall < 1.2) g.rapid = (g.rapid || 0) + 1; g.last = Date.now();
-    qWall = Date.now(); lastQ = qWall; saveSession();
+    sess.qlog.push([Math.round(wall * 10) / 10, d.ok ? 1 : 0, m === "test" ? 1 : 0]); if (sess.qlog.length > 400) sess.qlog = sess.qlog.slice(-400);
+    qWall = Date.now(); saveSession();
   });
   window.addEventListener("pagehide", function(){ account(); saveSession(); });
 
+  // "Still practicing?" after a stretch with no mouse / keyboard: the timer is paused until the student taps the button
+  function showStill(){
+    var test = curQ && /test/.test(curQ.mode || ""), w = test ? "testing" : "practicing";
+    var ov = overlay('<h2>Still ' + w + '?</h2><p>Tap the button to keep going. Your active time is paused until you do.</p><div class="ss-btns"><button type="button" class="ss-btn primary" id="ssStillOk">Yes, I\'m still ' + w + '</button></div>', "still");
+    if (sess) { sess.stills = (sess.stills || 0) + 1; saveSession(); }
+    ov.querySelector("#ssStillOk").onclick = function(){ ov.remove(); lastAct = Date.now(); account(); };
+  }
+  function stopTestLeft(reason){
+    if (!sess) return;
+    sess.tests.push({ t: Date.now(), title: curQ.title, correct: 0, total: 0, passed: false, accepted: false, stopped: reason });
+    saveSession(); curKey = null; stopGame(); refresh(true);
+  }
+  // class ends: a warning for the last 10 seconds, then the session closes and a new "outside class" one starts (a class starting opens a new class session straight away)
+  function classWarn(){
+    var per = period(), box = document.getElementById("ssEnd");
+    if (sess && sess.inClass && schedKnown && per) {
+      var e = new Date(), p = per.end.split(":"); e.setHours(+p[0], +p[1], 0, 0);
+      var left = Math.ceil((e - Date.now()) / 1000);
+      if (left <= 10 && left > 0) { if (!box) { box = document.createElement("div"); box.id = "ssEnd"; box.className = "ss-end"; document.body.appendChild(box); } box.textContent = "Class is ending. This session closes in " + left + " s."; return; }
+    }
+    if (box) box.remove();
+  }
+  function rollSession(){
+    if (curQ && curQ.mode === "test" && gameOnScreen() && !document.querySelector(".ss-ov") && sess && sess.inClass) stopTestLeft("class ended");
+    var box = document.getElementById("ssEnd"); if (box) box.remove();
+    endSession(); startSession(); chip();
+  }
+
   function mySessions(){ return jget("sessions", []).filter(function(x){ return me && x.name === me.name; }); }
+  function fmtDur(sec){ return sec < 60 ? Math.round(sec) + " s" : fmt(sec); }
+  function qStats(log){
+    var ts = (log || []).map(function(q){ return q[0]; }).sort(function(a, b){ return a - b; }), n = ts.length; if (!n) return null;
+    return { n: n, med: n % 2 ? ts[(n - 1) / 2] : (ts[n / 2 - 1] + ts[n / 2]) / 2, max: ts[n - 1], quick: ts.filter(function(t){ return t < 2; }).length, stall: ts.filter(function(t){ return t > 120; }).length };
+  }
+  function qStatsHtml(log, strip){
+    var q = qStats(log); if (!q) return "";
+    var h = '<div class="ss-q2">Median question <b>' + fmtDur(q.med) + '</b> &middot; Longest <b>' + fmtDur(q.max) + '</b><br>Quick (under 2 s): <b>' + q.quick + '</b> &middot; Stalled (over 2 min): <b>' + q.stall + '</b> &middot; Answered: ' + q.n + '</div>';
+    if (strip) h += '<div class="ss-strip" title="Newest question on the left. Height = time on screen. Red = wrong. Amber outline = over 2 minutes.">' + (log || []).slice(-40).reverse().map(function(a){ var t = a[0], hgt = Math.round(Math.min(30, 4 + 6 * Math.log(1 + t) / Math.LN2)); return '<i class="' + (a[1] ? "ok" : "no") + (t > 120 ? " long" : "") + '" style="height:' + hgt + 'px" title="' + fmtDur(t) + (a[1] ? "" : " (wrong)") + '"></i>'; }).join("") + '</div>';
+    return h;
+  }
   function todayStats(){
-    var d = dstr(), t = { sec: 0, right: 0, wrong: 0, qsec: 0, qn: 0, rapid: 0 };
+    var d = dstr(), t = { sec: 0, right: 0, wrong: 0, qsec: 0, qn: 0, rapid: 0, qlog: [] };
     mySessions().forEach(function(x){
       if (x.date !== d) return;
-      t.sec += x.activeSec || 0;
+      t.sec += x.activeSec || 0; t.qlog = t.qlog.concat(x.qlog || []);
       Object.keys(x.games || {}).forEach(function(k){ var g = x.games[k]; t.right += g.right; t.wrong += g.wrong; t.qsec += g.qsec; t.qn += g.qn; t.rapid += g.rapid || 0; });
     });
     return t;
   }
-  function sessBody(x){
+  function testLine(t){
+    var kind = t.practice ? "practice" : "class";
+    var st = t.stopped ? "stopped: " + esc(t.stopped) : (t.practice ? "practice test, not counted" : (t.accepted === true ? "score kept" : t.accepted === false ? "score cleared" : "waiting for the PIN"));
+    return '<div class="ss-test ' + kind + '"><b>' + (t.practice ? "PRACTICE TEST" : "TEST") + '</b> ' + esc(t.title) + (t.stopped ? "" : ' &middot; ' + t.correct + '/' + t.total + ' &middot; ' + (t.passed ? "Passed" : "Not passed")) + ' &middot; <span>' + st + '</span> <small>' + hm(new Date(t.t)) + '</small></div>';
+  }
+  function sessBody(x, cur){
     var gs = Object.keys(x.games || {}).map(function(k){ return x.games[k]; }).sort(function(a, b){ return (b.last || 0) - (a.last || 0); });   // newest first
     var ts = (x.tests || []).slice().reverse(), h = "";
     if (x.synth) h += '<div class="ss-warn">Clicks made by a script during games: ' + x.synth + '</div>';
-    h += ts.map(function(t){ return '<div class="ss-test"><b>TEST</b> ' + esc(t.title) + ' &middot; ' + t.correct + '/' + t.total + ' &middot; ' + (t.passed ? "Passed" : "Not passed") + ' &middot; <span>' + (t.accepted === true ? "score kept" : t.accepted === false ? "score cleared" : "waiting for the PIN") + '</span> <small>' + hm(new Date(t.t)) + '</small></div>'; }).join("");
-    h += gs.length ? '<table class="ss-tbl"><tr><th>Game</th><th>Right</th><th>Wrong</th><th>Avg. Question Time</th><th>Active</th></tr>' + gs.map(function(g){ return '<tr class="' + (g.mode === "test" ? "tst" : "") + '"><td>' + (g.mode === "test" ? '<b class="ss-tb">TEST</b> ' : "") + esc(g.title) + (g.mode === "test" ? "" : ' <small>(' + esc(g.mode) + ')</small>') + '</td><td>' + g.right + '</td><td>' + g.wrong + '</td><td>' + (g.qn ? Math.round(g.qsec / g.qn) + ' s' : "-") + '</td><td>' + fmt(g.sec) + '</td></tr>'; }).join("") + '</table>' : '<div class="ss-quiet">No questions answered yet.</div>';
+    if (x.stills) h += '<div class="ss-hl">"Still practicing?" boxes shown: ' + x.stills + '</div>';
+    h += qStatsHtml(x.qlog, true);
+    h += ts.map(testLine).join("");
+    h += gs.length ? '<table class="ss-tbl"><tr><th>Game</th><th>Right</th><th>Wrong</th><th>Avg. Question Time</th><th>Active</th></tr>' + gs.map(function(g){
+      var tc = g.mode === "test" ? "tst" : (g.mode === "practice test" ? "pt" : ""), badge = g.mode === "test" ? '<b class="ss-tb">TEST</b> ' : (g.mode === "practice test" ? '<b class="ss-tb pt">PRACTICE TEST</b> ' : "");
+      return '<tr class="' + tc + '"><td>' + badge + esc(g.title) + (tc ? "" : ' <small>(' + esc(g.mode) + ')</small>') + '</td><td>' + g.right + '</td><td>' + g.wrong + '</td><td>' + (g.qn ? fmtDur(g.qsec / g.qn) : "-") + '</td><td>' + fmt(g.sec) + '</td></tr>'; }).join("") + '</table>' : '<div class="ss-quiet">No questions answered yet.</div>';
     return h;
   }
+  function badge(x){ return x.inClass ? '<span class="ss-bd cls">CLASS' + (x.pname ? " &middot; " + esc(x.pname) : "") + '</span>' : '<span class="ss-bd out">OUTSIDE CLASS</span>'; }
   function histHtml(){
     var cur = sess && sess.id, list = mySessions().filter(function(x){ return x.id !== cur; }).sort(function(a, b){ return b.start - a.start; });
     if (!list.length) return '<div class="ss-quiet">No earlier sessions on this Chromebook yet.</div>';
-    return list.map(function(x){
-      var R = 0, W = 0; Object.keys(x.games || {}).forEach(function(k){ R += x.games[k].right; W += x.games[k].wrong; });
-      var nt = (x.tests || []).length;
-      return '<details class="ss-h" data-sid="' + esc(x.id) + '"><summary><b>' + esc(new Date(x.start).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })) + '</b> ' + hm(new Date(x.start)) + ' &middot; active ' + fmt(x.activeSec) + ' &middot; ' + R + '/' + (R + W) + (nt ? ' &middot; <span class="ss-tb">' + nt + ' test' + (nt > 1 ? "s" : "") + '</span>' : "") + '</summary>' +
-        '<div class="ss-hl">Open ' + fmt(x.openSec) + ' &middot; on screen, not playing ' + fmt(x.idleSec) + ' &middot; off screen ' + fmt(x.offSec) + ' &middot; left full screen ' + (x.fsExits || 0) + 'x</div>' + sessBody(x) + '</details>';
+    var days = [], by = {};
+    list.forEach(function(x){ if (!by[x.date]) { by[x.date] = []; days.push(x.date); } by[x.date].push(x); });
+    return days.map(function(d){
+      var tot = 0; by[d].forEach(function(x){ tot += x.activeSec || 0; });
+      return '<div class="ss-day"><div class="ss-dayh"><b>' + esc(new Date(by[d][0].start).toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })) + '</b><span>active ' + fmt(tot) + '</span></div>' + by[d].map(function(x){
+        var R = 0, W = 0; Object.keys(x.games || {}).forEach(function(k){ R += x.games[k].right; W += x.games[k].wrong; });
+        var nt = (x.tests || []).length;
+        return '<details class="ss-h ' + (x.inClass ? "cls" : "out") + '" data-sid="' + esc(x.id) + '"><summary>' + badge(x) + ' ' + hm(new Date(x.start)) + ' &middot; active ' + fmt(x.activeSec) + ' &middot; ' + R + '/' + (R + W) + (nt ? ' &middot; <span class="ss-tb">' + nt + ' test' + (nt > 1 ? "s" : "") + '</span>' : "") + '</summary>' +
+          '<div class="ss-hl">' + hm(new Date(x.start)) + ' to ' + hm(new Date(x.last)) + ' &middot; open ' + fmt(x.openSec) + ' &middot; on screen, not playing ' + fmt(x.idleSec) + ' &middot; off screen ' + fmt(x.offSec) + ' &middot; left full screen ' + (x.fsExits || 0) + 'x</div>' + sessBody(x) + '</details>'; }).join("") + '</div>';
     }).join("");
   }
   function refresh(full){
     if (!sess) return;
     function set(id, v){ var e = document.getElementById(id); if (e && e.textContent !== v) e.textContent = v; }
     set("ssMin", fmt(sess.activeSec)); set("ssOpen", fmt(sess.openSec)); set("ssIdle", fmt(sess.idleSec)); set("ssOff", fmt(sess.offSec));
-    var pl = playing(), st = document.getElementById("ssState"); if (st) { st.textContent = pl ? "counting: a game is being played" : "not counting"; st.className = "ss-pst" + (pl ? " on" : ""); }
-    var qs = document.getElementById("ssQs"); if (qs) { var qsec = qWall && curKey && gameOnScreen() ? (Date.now() - qWall) / 1000 : 0; qs.textContent = qsec ? "Question on screen: " + fmt(qsec) : ""; qs.className = "ss-qs" + (qsec > 60 ? " slow" : ""); }
+    var pl = playing(), pf = pl ? 0 : (pausedSince ? (Date.now() - pausedSince) / 1000 : 0), cls = pl ? "g" : (pf < 30 ? "y" : "r");
+    var mn = document.getElementById("ssMin"); if (mn && mn.className !== cls) mn.className = cls;
+    var st = document.getElementById("ssState");
+    if (st) {
+      var why = pl ? "counting: a game is being played" : (!fsOk() ? (inClass() ? "not counting: not in full screen" : "not counting: window not on screen") : (document.querySelector(".ss-ov") ? "not counting: waiting for a tap" : "not counting: no game is running"));
+      if (st.textContent !== why) st.textContent = why; st.className = "ss-pst " + cls;
+    }
+    var qq = document.getElementById("ssQcur");
+    if (qq) { var qsec = qWall && curKey && gameOnScreen() ? (Date.now() - qWall) / 1000 : -1; qq.textContent = qsec < 0 ? "-" : fmt(qsec); qq.className = qsec > 120 ? "r" : (qsec > 60 ? "y" : ""); }
     var tot = Math.max(1, sess.openSec), seg = document.getElementById("ssSeg");
     if (seg && seg.children.length === 3) { seg.children[0].style.width = (100 * sess.activeSec / tot) + "%"; seg.children[1].style.width = (100 * sess.idleSec / tot) + "%"; seg.children[2].style.width = (100 * sess.offSec / tot) + "%"; }
     var la = document.getElementById("ssLast");
-    if (la) { var cur = !fsSince && fsGone ? (Date.now() - fsGone) / 1000 : 0; la.textContent = cur ? fmt(cur) + " (now)" : (sess.lastOffAt ? fmt(sess.lastOffSec) + " at " + hm(new Date(sess.lastOffAt)) : "none yet"); }
+    if (la) { var cu = !fsSince && fsGone ? (Date.now() - fsGone) / 1000 : 0; la.textContent = cu ? fmt(cu) + " (now)" : (sess.lastOffAt ? fmt(sess.lastOffSec) + " at " + hm(new Date(sess.lastOffAt)) : "none yet"); }
     var fb = document.getElementById("ssFs");
     if (fb) {
       var inFs = fsSince > 0, ex = sess.fsExits || 0, exTxt = ex ? "Left full screen " + ex + (ex === 1 ? " time" : " times") + " this session (last at " + hm(new Date(sess.fsLast)) + ")" : "Has not left full screen this session";
@@ -202,8 +283,9 @@
     var per = period(), ps = document.getElementById("ssPsub2"); if (ps) { var t = per ? per.name + " (" + ampm24(per.start) + " - " + ampm24(per.end) + ")" : "Outside class time"; if (ps.textContent !== t) ps.textContent = t; }
     if (full) {
       var mo = document.getElementById("ssMore");
-      if (mo) { var T = todayStats(); mo.innerHTML = 'Total active today: <b>' + fmt(T.sec) + '</b><br>' + T.right + ' right &middot; ' + T.wrong + ' wrong' + (T.qn ? '<br>Avg. Question Time: <b>' + Math.round(T.qsec / T.qn) + ' s</b>' : "") + (T.rapid >= 3 ? '<br><span class="ss-warn2">Rapid answers (under 1.2 s): ' + T.rapid + '</span>' : ""); }
-      var cu = document.getElementById("ssCur"); if (cu) { var h = sessBody(sess); if (cu.getAttribute("data-h") !== h) { cu.setAttribute("data-h", h); cu.innerHTML = h; } }
+      if (mo) { var T = todayStats(), q = qStats(T.qlog); mo.innerHTML = 'Total active today: <b>' + fmt(T.sec) + '</b><br>' + T.right + ' right &middot; ' + T.wrong + ' wrong' + (T.qn ? '<br>Avg. Question Time: <b>' + fmtDur(T.qsec / T.qn) + '</b>' : "") + (q ? '<br>Median question: <b>' + fmtDur(q.med) + '</b> &middot; Longest: <b>' + fmtDur(q.max) + '</b><br>Quick (under 2 s): ' + q.quick + ' &middot; Stalled (over 2 min): ' + q.stall : "") + (T.rapid >= 3 ? '<br><span class="ss-warn2">Rapid answers (under 1.2 s): ' + T.rapid + '</span>' : ""); }
+      var cb = document.getElementById("ssCurBadge"); if (cb) cb.innerHTML = badge(sess);
+      var cu2 = document.getElementById("ssCur"); if (cu2) { var h = sessBody(sess, true); if (cu2.getAttribute("data-h") !== h) { cu2.setAttribute("data-h", h); cu2.innerHTML = h; } }
     }
   }
   function startTick(){
@@ -212,10 +294,39 @@
       if (!sess) return;
       account();
       if (Math.floor(sess.openSec) % 10 === 0) saveSession();
-      if (++rollN % 30 === 0) { var per = period(); if (per && sess.start < periodStartMs(per)) { endSession(); startSession(); chip(); } }
+      if (schedKnown) { classWarn(); if (sess.bucket !== bucketNow()) rollSession(); }
+      var now = Date.now();
+      if (!PREVIEWISH && curKey && fsOk() && gameOnScreen() && !document.querySelector(".ss-ov") && now - lastAct > (+cfg.stillSec || 120) * 1000) showStill();
       gShown++; refresh(gShown % 5 === 0);
     }, 1000);
   }
+
+  // ---- today's messages: colored boxes beside the game buttons ----
+  function cleanHtml(h){
+    var d = new DOMParser().parseFromString("<body>" + String(h || "") + "</body>", "text/html"), out = "";
+    (function walk(n){ n.childNodes.forEach(function(c){
+      if (c.nodeType === 3) out += esc(c.nodeValue);
+      else if (c.nodeType === 1) { var t = c.tagName.toLowerCase();
+        if (t === "b" || t === "strong") { out += "<b>"; walk(c); out += "</b>"; } else if (t === "u") { out += "<u>"; walk(c); out += "</u>"; }
+        else if (t === "br") out += "<br>"; else if (t === "div" || t === "p") { if (out && !/<br>$/.test(out)) out += "<br>"; walk(c); } else walk(c); }
+    }); })(d.body);
+    return out;
+  }
+  window.ssMsgsHtml = function(){
+    var list = cfg.messages && cfg.messages.length ? cfg.messages : (cfg.today ? [{ html: esc(cfg.today), color: "#2fb067" }] : []);
+    return list.map(function(m){ var c = /^#[0-9a-f]{6}$/i.test(m.color) ? m.color : "#3a2f8f"; return '<div class="ss-msg" style="--mc:' + c + '">' + cleanHtml(m.html) + '</div>'; }).join("");
+  };
+  function fillMsgs(){ var e = document.getElementById("ssMsgs"); if (e) e.innerHTML = window.ssMsgsHtml(); }
+  // ---- if the game would push off the screen, the whole page is scaled down to fit (no scrolling) ----
+  var fitT = 0;
+  function fit(){
+    var app = document.getElementById("app"); if (!app || !document.body.classList.contains("ss-on")) return;
+    app.style.zoom = "";
+    var H = window.innerHeight, z = 1;
+    for (var i = 0; i < 4; i++) { var sh = document.documentElement.scrollHeight; if (sh <= H + 1) break; z = Math.max(0.45, z * H / sh); app.style.zoom = String(z); }
+  }
+  function fitSoon(){ clearTimeout(fitT); fitT = setTimeout(fit, 120); }
+  window.addEventListener("resize", fitSoon); setInterval(fitSoon, 3000);
 
   // ---- UI ----
   function toast(msg){
@@ -227,7 +338,9 @@
   function ampm24(hhmm){ var p = String(hhmm).split(":"), d = new Date(); d.setHours(+p[0], +p[1], 0, 0); return hm(d); }
   function dayOk(p, d){ if (p.dates && p.dates.length) return p.dates.indexOf(dstr(d)) >= 0; if (p.days && p.days.length) return p.days.indexOf(d.getDay()) >= 0; return true; }
   function period(){
-    var d = new Date(), now = pad(d.getHours()) + ":" + pad(d.getMinutes()), list = (cfg.schedule || []);
+    var d = new Date(), now = pad(d.getHours()) + ":" + pad(d.getMinutes()), cd = cfg.classDays && cfg.classDays[dstr(d)];
+    if (cd && cd[0] <= now && now < cd[1]) return { name: cfg.classLabel ? "Period " + cfg.classLabel : "Class", start: cd[0], end: cd[1] };
+    var list = (cfg.schedule || []);
     for (var i = 0; i < list.length; i++) if (dayOk(list[i], d) && list[i].start <= now && now < list[i].end) return list[i];
     return null;
   }
@@ -236,17 +349,17 @@
     if (!me) { host.innerHTML = ""; return; }
     var side = host.querySelector(".ss-side"), keep = side ? side.scrollTop : 0, openIds = [].map.call(host.querySelectorAll("details[open]"), function(e){ return e.getAttribute("data-sid"); });
     var code = cfg.secret ? window.ssDailyCode(cfg.secret, dstr()) : "";
-    host.innerHTML = '<div class="ss-side"><div><div class="ss-pname">' + esc(me.name) + '</div><div class="ss-psub">' + (me.borrowed ? "Borrowing " + esc(me.owner) + "'s Chromebook<br>" : "") + '<span id="ssPsub2" style="color:#3a2f8f"></span></div></div>' +
-      '<div class="ss-pmin"><b id="ssMin">0:00</b><span><i class="dot a"></i>active in games this session</span><span class="ss-pst" id="ssState">not counting</span><span class="ss-qs" id="ssQs"></span></div>' +
+    host.innerHTML = '<div class="ss-side"><div class="ss-who"><div class="ss-pname">' + esc(me.name) + '</div><div class="ss-psub">' + (me.borrowed ? "Borrowing " + esc(me.owner) + "'s Chromebook<br>" : "") + '<span id="ssPsub2" style="color:#3a2f8f"></span></div></div>' +
+      '<div class="ss-pmin"><b id="ssMin" class="y">0:00</b><span><i class="dot a"></i>active in games this session</span><span class="ss-pst" id="ssState">not counting</span></div>' +
       '<div class="ss-seg" id="ssSeg"><i class="a"></i><i class="i"></i><i class="o"></i></div>' +
-      '<div class="ss-tiles"><div class="ss-tile"><span>Total time open</span><b id="ssOpen">0:00</b></div>' +
+      '<div class="ss-tiles"><div class="ss-tile"><span>This question on screen</span><b id="ssQcur">-</b></div><div class="ss-tile"><span>Total time open</span><b id="ssOpen">0:00</b></div>' +
       '<div class="ss-tile"><span><i class="dot i"></i>On screen, not playing</span><b id="ssIdle">0:00</b></div><div class="ss-tile"><span><i class="dot o"></i>Off screen</span><b id="ssOff">0:00</b></div>' +
-      '<div class="ss-tile"><span>Most recent time off screen</span><b id="ssLast">none yet</b></div></div>' +
+      '<div class="ss-tile wide"><span>Most recent time off screen</span><b id="ssLast">none yet</b></div></div>' +
       '<div class="ss-fs out" id="ssFs"></div><div class="ss-pmore" id="ssMore"></div>' +
-      '<div class="ss-sec">This session</div><div id="ssCur"></div>' +
+      '<div class="ss-sec">This session <span id="ssCurBadge"></span></div><div id="ssCur"></div>' +
       '<div class="ss-sec">Earlier sessions</div><div id="ssHist">' + histHtml() + '</div>' +
       (code ? '<div class="ss-code">Code of the day <b>' + code + '</b></div>' : "") +
-      '<button type="button" class="ss-pb" id="ssTeach" title="teacher">teacher &middot; site X98</button></div>';
+      '<button type="button" class="ss-pb" id="ssTeach" title="teacher">teacher &middot; site X99</button></div>';
     [].forEach.call(host.querySelectorAll("details"), function(e){ if (openIds.indexOf(e.getAttribute("data-sid")) >= 0) e.open = true; });
     document.getElementById("ssTeach").onclick = function(){ teacherGate(whoMenu); };
     var ns = host.querySelector(".ss-side"); if (ns) ns.scrollTop = keep;
@@ -284,12 +397,13 @@
   }
   function teacherGate(next){ pinPrompt({ title: "Teacher PIN", okLabel: "Go", cancelLabel: "Cancel", onOk: next }); }
 
-  // ---- tests: the teacher's PIN is needed to START one and to KEEP the score at the end (without it the score is cleared) ----
+  // ---- tests. DURING CLASS: the teacher's PIN starts a test, and at the end only the PIN can KEEP or CLEAR the score. OUTSIDE CLASS: no PIN; it is a "practice test" that never counts. ----
   window.ssGateTest = function(opts, retry){
     if (PREVIEWISH) return true;
     var isTest = opts && ((opts.student && !opts.studentPractice) || opts.mode === "test");
-    if (!isTest) return true;
-    if (window.__ssAllow) { window.__ssAllow = false; return true; }
+    if (!isTest) { window.__ssTestKind = null; return true; }
+    if (!inClass()) { window.__ssTestKind = "practice"; return true; }
+    if (window.__ssAllow) { window.__ssAllow = false; window.__ssTestKind = "class"; return true; }
     pinPrompt({ title: "Teacher PIN to start a test", sub: "Ask your teacher. Practice does not need a PIN.", okLabel: "Start test", cancelLabel: "Cancel", onOk: function(){ window.__ssAllow = true; retry(); } });
     return false;
   };
@@ -304,13 +418,28 @@
     refresh(true);
   }
   function testEnd(rec){
-    pinPrompt({ title: "Test finished: " + rec.correct + "/" + rec.total + (rec.passed ? " (passed)" : ""), sub: "Show your teacher. The teacher's PIN keeps this score. Without it the score is cleared.", okLabel: "Keep score", cancelLabel: "Clear score",
-      onOk: function(){ markTest(rec, true); stopGame(); },
-      onCancel: function(){ try { window.ssRejectTest && window.ssRejectTest(rec.undo); } catch (e) {} markTest(rec, false); stopGame(); } });
+    var ov = overlay('<h2>Test finished: ' + rec.correct + '/' + rec.total + (rec.passed ? " (passed)" : "") + '</h2><p>Show your teacher. Only the teacher\'s PIN can keep or clear this score.</p><input type="password" id="ssTEp" maxlength="40" autocomplete="off"><div class="ss-err" id="ssTEe"></div><div class="ss-btns"><button type="button" class="ss-btn" id="ssTEclear">Clear score</button><button type="button" class="ss-btn primary" id="ssTEkeep">Keep score</button></div>');
+    var pi = ov.querySelector("#ssTEp"); pi.focus();
+    function act(keep){
+      verifyPin(pi.value).then(function(r){
+        if (!r.ok) { ov.querySelector("#ssTEe").textContent = pinMsg(r); pi.value = ""; pi.focus(); return; }
+        ov.remove();
+        if (!keep) { try { window.ssRejectTest && window.ssRejectTest(rec.undo); } catch (e) {} }
+        markTest(rec, keep); stopGame();
+      });
+    }
+    ov.querySelector("#ssTEkeep").onclick = function(){ act(true); }; ov.querySelector("#ssTEclear").onclick = function(){ act(false); };
+    pi.onkeydown = function(e){ if (e.key === "Enter") act(true); };
   }
   window.addEventListener("ss-finish", function(ev){
     var d = ev.detail || {}; if (PREVIEWISH || !d.test) return;
+    var practice = window.__ssTestKind === "practice";
     var rec = { t: Date.now(), title: d.title, correct: d.correct, total: d.total, passed: !!d.passed, accepted: null, undo: d.undo };
+    if (practice) {   // outside class: a practice test. Its score does not count (results put back as they were); the history line stays, marked as practice
+      try { window.ssRejectTest && window.ssRejectTest(d.undo, true); } catch (e) {}
+      if (sess) { sess.tests.push({ t: rec.t, title: rec.title, correct: rec.correct, total: rec.total, passed: rec.passed, accepted: true, practice: true }); saveSession(); }
+      refresh(true); return;
+    }
     ls("pendingTest", JSON.stringify(rec));
     if (sess) { sess.tests.push({ t: rec.t, title: rec.title, correct: rec.correct, total: rec.total, passed: rec.passed, accepted: null }); saveSession(); }
     testEnd(rec);
@@ -354,7 +483,8 @@
     cfg = c || {}; cfgReady = true; try { window.ssCoverCheck && window.ssCoverCheck(); } catch (e) {}
     var bar = document.createElement("div"); bar.id = "ssBar"; bar.className = "ss-bar";
     document.body.appendChild(bar); if (!PREVIEWISH || /[?&]preview=1/.test(location.search)) document.body.classList.add("ss-on");
-    if (cfg.today) { var f = document.createElement("div"); f.className = "ss-focus"; f.innerHTML = '<i class="ti ti-target" aria-hidden="true"></i> ' + esc(cfg.today); var body = document.getElementById("body"); if (body) body.parentNode.insertBefore(f, body); }
+    schedKnown = !!((cfg.classDays && Object.keys(cfg.classDays).length) || (cfg.schedule && cfg.schedule.length));
+    fillMsgs(); fitSoon();
     if (cfg.paused) { overlay('<h2>The games are paused</h2><p>' + esc(cfg.pausedMsg || "Your teacher has paused the site. Look at the classroom screen for what to do.") + '</p>', "gate"); return; }
     if (/[?&]class=1/.test(location.search)) { me = { name: "Class", owner: "Class", borrowed: false, since: Date.now() }; applyStudent(); return; }   // X88b: the teacher's docked class view: no name prompt, practice is logged for "Class"
     loadMe();

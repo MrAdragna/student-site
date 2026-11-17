@@ -2,7 +2,7 @@
    session timer, the "show my session" screen, today's focus message, and the teacher-only controls blocked. */
 (function(){
   "use strict";
-  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X101";   // X101 (c13): failing class tests need no PIN; a test cut off by the end of class is saved as a practice test with the score so far
+  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X102";   // X101 (c13): failing class tests need no PIN; a test cut off by the end of class is saved as a practice test with the score so far
   function lg(k){ try { return localStorage.getItem(P + k); } catch (e) { return null; } }
   function ls(k, v){ try { localStorage.setItem(P + k, v); } catch (e) {} }
   function jget(k, d){ try { var v = JSON.parse(lg(k)); return v == null ? d : v; } catch (e) { return d; } }
@@ -181,6 +181,11 @@
     qWall = Date.now(); saveSession();
   });
   window.addEventListener("pagehide", function(){ account(); saveSession(); });
+  // X102: what the optional cloud ping (student-cloud.js) may report: no name, just the state of this device
+  window.ssStatus = function(){
+    var g = (sess && sess.games) || {}, r = 0, w = 0, a = 0; Object.keys(g).forEach(function(k){ r += g[k].right || 0; w += g[k].wrong || 0; a += g[k].sec || 0; });
+    return { inClass: inClass(), preview: PREVIEWISH, playing: playing(), state: prevState, game: curQ && curQ.title || "", mode: curQ && curQ.mode || "", right: r, wrong: w, active: Math.round(a), name: me ? me.name : "" };
+  };
 
   // "Still practicing?" after a stretch with no mouse / keyboard: the timer is paused until the student taps the button
   function showStill(){

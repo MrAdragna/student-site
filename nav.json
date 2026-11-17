@@ -1,10 +1,23 @@
 {
   "version": 1,
-  "title": "Music Practice",
-  "tagline": "Pick a practice page to begin.",
+  "title": "Valleywood Choirs",
+  "tagline": "",
   "items": [
-    { "id": "piano", "label": "Piano", "href": "/piano/", "blurb": "Note names, keys and reading practice.", "icon": "piano", "status": "live" },
-    { "id": "theory", "label": "Music Theory", "href": "/theory/", "blurb": "Coming soon.", "icon": "staff", "status": "soon" },
-    { "id": "rhythm", "label": "Rhythm", "href": "/rhythm/", "blurb": "Coming soon.", "icon": "rhythm", "status": "soon" }
+    {
+      "id": "choir",
+      "label": "Choir",
+      "href": "/choir/",
+      "blurb": "Note names, keys and reading practice.",
+      "icon": "piano",
+      "status": "live"
+    },
+    {
+      "id": "piano",
+      "label": "Piano",
+      "href": "/piano/",
+      "blurb": "Coming soon.",
+      "icon": "piano",
+      "status": "soon"
+    }
   ]
 }

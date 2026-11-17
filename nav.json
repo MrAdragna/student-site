@@ -9,7 +9,7 @@
       "href": "/choir/",
       "blurb": "Note names, keys and reading practice.",
       "icon": "piano",
-      "status": "live"
+      "status": "soon"
     },
     {
       "id": "piano",
@@ -17,7 +17,7 @@
       "href": "/piano/",
       "blurb": "Coming soon.",
       "icon": "piano",
-      "status": "soon"
+      "status": "live"
     }
   ]
 }

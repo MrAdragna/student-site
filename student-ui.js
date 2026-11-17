@@ -24,7 +24,7 @@
       "body.ss-on .lcol { max-height: calc(100vh - 110px); overflow-y: auto; }" +
       ".hud { padding-right: 0 !important; } .hud-stats { flex: 1 1 auto; } .hud-stat.hearts { flex: 1 1 auto; justify-content: space-evenly; } .hud-stat .hearts-row { gap: 10px; } .hud-stat .heart { font-size: 32px; }" +
       ".ss-bar { position: fixed; top: 8px; right: 8px; bottom: 8px; width: 340px; z-index: 100; display: block; margin: 0; }" +
-      ".ss-side { height: 100%; box-sizing: border-box; overflow-y: auto; background: #fff; border: 3px solid #3a2f8f; border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }" +
+      ".ss-side { height: 100%; box-sizing: border-box; overflow: hidden; background: #fff; border: 3px solid #3a2f8f; border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }" +
       ".ss-pname { font-size: 30px; font-weight: 800; color: #2a2170; line-height: 1.1; }" +
       ".ss-psub:empty { display: none; } .ss-psub { font-size: 13px; font-weight: 700; color: #7a4b00; }" +
       ".ss-pmin { text-align: center; line-height: 1; background: #f4f2ff; border-radius: 12px; padding: 8px 4px 6px; }" +
@@ -46,6 +46,8 @@
       ".ss-test { background: #fff1d6; border-left: 5px solid #e6a817; border-radius: 6px; padding: 4px 8px; margin-bottom: 4px; font-size: 12.5px; } .ss-test b, .ss-tb { background: #e6a817; color: #3d2a00; border-radius: 4px; padding: 0 5px; font-size: 10.5px; font-weight: 800; }" +
       ".ss-tbl tr.tst td { background: #fff1d6; } .ss-warn { background: #fde2e0; color: #8a1c14; border-radius: 6px; padding: 3px 8px; font-size: 12px; font-weight: 700; margin-bottom: 4px; } .ss-warn2 { color: #8a1c14; font-weight: 700; }" +
       ".ss-h { border: 1px solid #ddd; border-radius: 8px; margin-bottom: 5px; padding: 3px 8px; font-size: 12.5px; } .ss-h summary { cursor: pointer; } .ss-hl { color: #555; font-size: 11.5px; margin: 4px 0; }" +
+      ".ss-top { flex: 0 0 auto; display: flex; flex-direction: column; gap: 8px; } .ss-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 2px; }" +
+      ".ss-ov.still .ss-card, .ss-ov.still .ss-card * { text-align: center; } .ss-ov.still .ss-btns { justify-content: center; } .ss-ov.still .ss-card { display: flex; flex-direction: column; align-items: center; }" +
       ".ss-who { text-align: center; } .ss-psub { text-align: center; }" +
       ".ss-pmin b.g { color: #1a8a4a; } .ss-pmin b.y { color: #c98a00; } .ss-pmin b.r { color: #c0392b; } .ss-pst.g { color: #1a8a4a; } .ss-pst.y { color: #c98a00; } .ss-pst.r { color: #c0392b; }" +
       ".ss-tile b.y { color: #c98a00; } .ss-tile b.r { color: #c0392b; }" +
@@ -57,6 +59,7 @@
       ".ss-dayh { display: flex; justify-content: space-between; font-size: 12.5px; background: #ece9ff; border-radius: 6px; padding: 3px 8px; margin: 4px 0; color: #2a2170; } .ss-dayh span { font-weight: 700; }" +
       ".ss-bd { font-size: 10.5px; font-weight: 800; border-radius: 4px; padding: 0 5px; } .ss-bd.cls { background: #1a8a4a; color: #fff; } .ss-bd.out { background: #bbb; color: #333; }" +
       ".ss-h.cls { border-left: 5px solid #1a8a4a; background: #f1faf4; } .ss-h.out { border-left: 5px solid #bbb; }" +
+      "@media (max-height: 760px) { .ss-pname { font-size: 24px; } .ss-pmin b { font-size: 56px; } .ss-tile { padding: 3px 8px; } .ss-tile b { font-size: 17px; } .ss-top, .ss-side { gap: 4px; } .ss-fs b { font-size: 24px; } .ss-fs small { display: none; } }" +
       "@media (max-width: 900px) { body.ss-on { padding: 8px; } .ss-bar { position: static; width: auto; margin-bottom: 8px; } .ss-side { height: auto; } .ss-pname { font-size: 22px; } .ss-pmin b { font-size: 40px; } .ss-side .ss-tbl, .ss-pb { display: none; } }";
     (document.head || document.documentElement).appendChild(st);
   })();
@@ -113,14 +116,14 @@
   }
   function saveSession(){ if (!sess) return; sess.last = Date.now(); var all = jget("sessions", []), i = all.map(function(s){ return s.id; }).indexOf(sess.id); if (i >= 0) all[i] = sess; else all.push(sess); ls("sessions", JSON.stringify(all.slice(-400))); }
   function endSession(){ if (sess) { account(); sess.closed = true; saveSession(); sess = null; } }
-  ["pointerdown", "keydown", "pointermove", "touchstart"].forEach(function(n){ window.addEventListener(n, function(){ lastAct = Date.now(); }, true); });
+  ["pointerdown", "keydown", "pointermove", "touchstart"].forEach(function(n){ window.addEventListener(n, function(ev){ lastAct = Date.now(); if (needTap && ev.isTrusted !== false && fsOk() && (n === "pointerdown" || n === "keydown" || n === "touchstart")) { needTap = false; account(); } }, true); });
   // clicks that no finger made (a script / console injecting clicks while a real game is on screen) are counted and shown to the teacher
   window.addEventListener("click", function(ev){
     if (ev.isTrusted || window.__ssSelf || !sess) return;
     var sc = document.getElementById("stageCard"); if (sc && sc.classList.contains("playing")) sess.synth = (sess.synth || 0) + 1;
   }, true);
 
-  var curKey = null, curQ = { title: "", mode: "" }, qWall = 0, gShown = 0, fsSince = 0, fsGone = 0, lastTickT = Date.now(), prevState = "off", prevKey = null, cfgReady = false, pausedSince = 0;
+  var curKey = null, curQ = { title: "", mode: "" }, qWall = 0, gShown = 0, fsSince = 0, fsGone = 0, lastTickT = Date.now(), prevState = "off", prevKey = null, cfgReady = false, pausedSince = 0, needTap = false;
   window.ssInClass = function(){ return cfgReady && inClass(); };
   function fsOk(){
     if (document.visibilityState !== "visible") return false;
@@ -135,6 +138,7 @@
   }
   function playing(){
     if (!sess || !curKey || !fsOk() || !gameOnScreen()) return false;
+    if (needTap) return false;   // the student left the screen (or full screen): nothing counts until they touch the page again
     if (document.querySelector(".ss-ov")) return false;   // a PIN box or the "Still practicing?" box is open
     return true;
   }
@@ -149,7 +153,8 @@
     sess.openSec += dt + rest; sess.offSec += rest;
     if (prevState === "play") { sess.activeSec += dt; if (prevKey) { var g = sess.games[prevKey]; if (g) g.sec += dt; } }
     else if (prevState === "idle") sess.idleSec += dt; else sess.offSec += dt;
-    var inNow = fsOk(), pl = playing();
+    var inNow = fsOk(); if (!inNow && curKey) needTap = true;
+    var pl = playing();
     prevState = pl ? "play" : (inNow ? "idle" : "off"); prevKey = pl ? curKey : null;
     if (pl) pausedSince = 0; else if (!pausedSince) pausedSince = now;
     if (inNow && !fsSince) { fsSince = now; if (fsGone) { sess.lastOffSec = (now - fsGone) / 1000; sess.lastOffAt = fsGone; } fsGone = 0; }
@@ -265,7 +270,7 @@
     var mn = document.getElementById("ssMin"); if (mn && mn.className !== cls) mn.className = cls;
     var st = document.getElementById("ssState");
     if (st) {
-      var why = pl ? "counting: a game is being played" : (!fsOk() ? (inClass() ? "not counting: not in full screen" : "not counting: window not on screen") : (document.querySelector(".ss-ov") ? "not counting: waiting for a tap" : "not counting: no game is running"));
+      var why = pl ? "counting: a game is being played" : (!fsOk() ? (inClass() ? "not counting: not in full screen" : "not counting: window not on screen") : ((needTap || document.querySelector(".ss-ov")) ? "not counting: tap the game to continue" : "not counting: no game is running"));
       if (st.textContent !== why) st.textContent = why; st.className = "ss-pst " + cls;
     }
     var qq = document.getElementById("ssQcur");
@@ -347,22 +352,22 @@
   function chip(){
     var host = document.getElementById("ssBar"); if (!host) return;
     if (!me) { host.innerHTML = ""; return; }
-    var side = host.querySelector(".ss-side"), keep = side ? side.scrollTop : 0, openIds = [].map.call(host.querySelectorAll("details[open]"), function(e){ return e.getAttribute("data-sid"); });
+    var side = host.querySelector(".ss-scroll"), keep = side ? side.scrollTop : 0, openIds = [].map.call(host.querySelectorAll("details[open]"), function(e){ return e.getAttribute("data-sid"); });
     var code = cfg.secret ? window.ssDailyCode(cfg.secret, dstr()) : "";
-    host.innerHTML = '<div class="ss-side"><div class="ss-who"><div class="ss-pname">' + esc(me.name) + '</div><div class="ss-psub">' + (me.borrowed ? "Borrowing " + esc(me.owner) + "'s Chromebook<br>" : "") + '<span id="ssPsub2" style="color:#3a2f8f"></span></div></div>' +
+    host.innerHTML = '<div class="ss-side"><div class="ss-top"><div class="ss-who"><div class="ss-pname">' + esc(me.name) + '</div><div class="ss-psub">' + (me.borrowed ? "Borrowing " + esc(me.owner) + "'s Chromebook<br>" : "") + '<span id="ssPsub2" style="color:#3a2f8f"></span></div></div>' +
       '<div class="ss-pmin"><b id="ssMin" class="y">0:00</b><span><i class="dot a"></i>active in games this session</span><span class="ss-pst" id="ssState">not counting</span></div>' +
       '<div class="ss-seg" id="ssSeg"><i class="a"></i><i class="i"></i><i class="o"></i></div>' +
       '<div class="ss-tiles"><div class="ss-tile"><span>This question on screen</span><b id="ssQcur">-</b></div><div class="ss-tile"><span>Total time open</span><b id="ssOpen">0:00</b></div>' +
       '<div class="ss-tile"><span><i class="dot i"></i>On screen, not playing</span><b id="ssIdle">0:00</b></div><div class="ss-tile"><span><i class="dot o"></i>Off screen</span><b id="ssOff">0:00</b></div>' +
       '<div class="ss-tile wide"><span>Most recent time off screen</span><b id="ssLast">none yet</b></div></div>' +
-      '<div class="ss-fs out" id="ssFs"></div><div class="ss-pmore" id="ssMore"></div>' +
-      '<div class="ss-sec">This session <span id="ssCurBadge"></span></div><div id="ssCur"></div>' +
+      '<div class="ss-fs out" id="ssFs"></div></div>' +
+      '<div class="ss-scroll"><div class="ss-sec">This session <span id="ssCurBadge"></span></div><div class="ss-pmore" id="ssMore"></div><div id="ssCur"></div>' +
       '<div class="ss-sec">Earlier sessions</div><div id="ssHist">' + histHtml() + '</div>' +
       (code ? '<div class="ss-code">Code of the day <b>' + code + '</b></div>' : "") +
-      '<button type="button" class="ss-pb" id="ssTeach" title="teacher">teacher &middot; site X99</button></div>';
+      '<button type="button" class="ss-pb" id="ssTeach" title="teacher">teacher &middot; site X99</button></div></div>';
     [].forEach.call(host.querySelectorAll("details"), function(e){ if (openIds.indexOf(e.getAttribute("data-sid")) >= 0) e.open = true; });
     document.getElementById("ssTeach").onclick = function(){ teacherGate(whoMenu); };
-    var ns = host.querySelector(".ss-side"); if (ns) ns.scrollTop = keep;
+    var ns = host.querySelector(".ss-scroll"); if (ns) ns.scrollTop = keep;
     refresh(true);
   }
 

@@ -1,13 +1,13 @@
-/* student-cloud.js (X102, c13, 17 Nov 2026). OPTIONAL cloud link, loaded after student-ui.js. Does NOTHING unless the published settings contain cloud.url.
+/* student-cloud.js (X103, c13, 17 Nov 2026). OPTIONAL cloud link, loaded after student-ui.js. Does NOTHING unless the published settings contain cloud.url.
    - Only during class: every ~45 s (random +/- 5 s) one small status ping (random device code, state, game, right / wrong, active seconds). NO name unless
      cfg.cloud.names is true AND the service allows it. Outside class: no network at all.
    - Auto offline mode: a ping that fails or takes longer than 3 s marks this Chromebook "offline" (the site works exactly as before, everything stays on the device);
-     it retries after 20 s, then 30 s, then every 60 s, and goes back "online" by itself at the first answer. The browser's "online" event and coming back to the tab retry at once.
+     it retries every 30 s (flat, X103), and goes back "online" by itself at the first answer. The browser's "online" event and coming back to the tab retry at once.
    - Live settings: the service's reply carries a version. When the teacher pushes new settings, this page downloads them, saves a copy (read by student-shim.js) and
      reloads itself when no game is being played. */
 (function(){
   "use strict";
-  var P = window.SS_PREFIX || "ss:", TIMEOUT = 3000, EVERY = 45000, BACKOFF = [20000, 30000, 60000];
+  var P = window.SS_PREFIX || "ss:", TIMEOUT = 3000, EVERY = 45000, BACKOFF = [30000];
   function lg(k){ try { return localStorage.getItem(P + k); } catch (e) { return null; } }
   function ls(k, v){ try { localStorage.setItem(P + k, v); } catch (e) {} }
   var cfg = null, url = "", fails = 0, timer = null, busy = false, reloadWait = null;

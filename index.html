@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- site-landing v1 (c13, X100). Home page of the whole site (top of the repo). The buttons come from nav.json, so adding a page to the site is one edit there. If nav.json cannot load, the built-in list below is used. -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Music Practice</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='9' fill='%23222'/%3E%3Crect x='4' y='4' width='17' height='56' rx='3' fill='%23fff'/%3E%3Crect x='23' y='4' width='18' height='56' rx='3' fill='%23fff'/%3E%3Crect x='43' y='4' width='17' height='56' rx='3' fill='%23fff'/%3E%3Crect x='14' y='4' width='11' height='34' rx='2' fill='%23222'/%3E%3Crect x='39' y='4' width='11' height='34' rx='2' fill='%23222'/%3E%3C/svg%3E">
+<style>
+  :root { --bg:#27235a; --panel:#35307c; --edge:#1d1a45; --accent:#7b5cf0; --accent-edge:#5338c4; --card:#fbfaff; --card-edge:#cdc6f3; --ink:#2a2750; --good:#2fb067; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; background: var(--bg); color: #fff; font: 18px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 5vh 20px 24px; }
+  header { text-align: center; margin-bottom: 4vh; }
+  h1 { margin: 0 0 6px; font-size: clamp(30px, 6vw, 52px); letter-spacing: .5px; }
+  .tag { margin: 0; color: #cfc9ff; font-size: clamp(16px, 2.4vw, 22px); }
+  nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 280px)); gap: 20px; justify-content: center; width: 100%; max-width: 960px; }
+  a.card { display: block; background: var(--card); color: var(--ink); text-decoration: none; border-radius: 16px; border: 2px solid var(--card-edge); border-bottom: 7px solid var(--card-edge); padding: 20px 18px 16px; text-align: center; transition: transform .12s, border-bottom-width .12s; }
+  a.card:hover, a.card:focus-visible { transform: translateY(-2px); outline: 3px solid var(--accent); outline-offset: 2px; }
+  a.card:active { transform: translateY(3px); border-bottom-width: 3px; }
+  a.card svg { width: 64px; height: 64px; margin-bottom: 6px; }
+  a.card b { display: block; font-size: 26px; }
+  a.card span { display: block; color: #5b5788; font-size: 15px; margin-top: 4px; }
+  a.card.soon { background: var(--panel); color: #b9b3ee; border-color: var(--edge); border-bottom-color: var(--edge); pointer-events: none; }
+  a.card.soon span { color: #9d96d8; }
+  .badge { display: inline-block; margin-top: 8px; padding: 1px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; background: var(--good); color: #fff; }
+  .soon .badge { background: #4a4496; color: #d9d4ff; }
+  footer { margin-top: auto; padding-top: 40px; color: #8f88cf; font-size: 14px; text-align: center; }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">Music Practice</h1>
+  <p class="tag" id="tagline">Pick a practice page to begin.</p>
+</header>
+<nav id="nav" aria-label="Site pages"></nav>
+<footer>Your practice is saved on the device you use.</footer>
+<script>
+(function () {
+  var FALLBACK = { title: "Music Practice", tagline: "Pick a practice page to begin.", items: [
+    { id: "piano", label: "Piano", href: "/piano/", blurb: "Note names, keys and reading practice.", icon: "piano", status: "live" } ] };
+  var ICONS = {
+    piano: "<svg viewBox='0 0 64 64' aria-hidden='true'><rect x='4' y='6' width='56' height='52' rx='6' fill='#2a2750'/><rect x='8' y='10' width='15' height='44' rx='2' fill='#fff'/><rect x='24.5' y='10' width='15' height='44' rx='2' fill='#fff'/><rect x='41' y='10' width='15' height='44' rx='2' fill='#fff'/><rect x='17' y='10' width='10' height='26' rx='2' fill='#2a2750'/><rect x='37' y='10' width='10' height='26' rx='2' fill='#2a2750'/></svg>",
+    staff: "<svg viewBox='0 0 64 64' aria-hidden='true'><g stroke='currentColor' stroke-width='3'><path d='M6 18h52M6 27h52M6 36h52M6 45h52M6 54h52'/></g><ellipse cx='28' cy='36' rx='8' ry='6' fill='currentColor'/></svg>",
+    rhythm: "<svg viewBox='0 0 64 64' aria-hidden='true'><g fill='currentColor'><ellipse cx='16' cy='46' rx='8' ry='6'/><rect x='22' y='12' width='4' height='34'/><ellipse cx='44' cy='46' rx='8' ry='6'/><rect x='50' y='12' width='4' height='34'/><rect x='22' y='12' width='32' height='7'/></g></svg>"
+  };
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function safeHref(h) { h = String(h || ""); return /^\/[^\/\\]/.test(h) || h === "/" ? h : "#"; }   // site-relative links only
+  function draw(cfg) {
+    document.getElementById("title").textContent = cfg.title || FALLBACK.title;
+    document.getElementById("tagline").textContent = cfg.tagline || "";
+    document.title = cfg.title || FALLBACK.title;
+    document.getElementById("nav").innerHTML = (cfg.items || []).map(function (it) {
+      var soon = it.status === "soon";
+      return "<a class='card" + (soon ? " soon" : "") + "' href='" + esc(safeHref(it.href)) + "'" + (soon ? " aria-disabled='true' tabindex='-1'" : "") + ">" +
+        (ICONS[it.icon] || ICONS.piano) + "<b>" + esc(it.label) + "</b><span>" + esc(it.blurb) + "</span><i class='badge'>" + (soon ? "Soon" : "Open") + "</i></a>";
+    }).join("");
+  }
+  draw(FALLBACK);
+  fetch("/nav.json", { cache: "no-cache" }).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (cfg) { if (cfg && cfg.items) draw(cfg); }).catch(function () {});
+})();
+</script>
+</body>
+</html>

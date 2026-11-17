@@ -1,6 +1,6 @@
 /* X89: class mode (?class=1) shows every game even if switched off for students. student-shim.js (Student site v1, 13 Nov 2026, c12). Loaded BEFORE NoteID.js on the student site.
    Gives NoteID a read-only "published" copy of the teacher's levels / config / lessons (from site-config.json) and keeps everything the
-   student does (scores, history) in this Chromebook's own localStorage. Nothing here talks to a server. */
+   student does (scores, history) in this Chromebook's own localStorage. Nothing here talks to a server (X102: student-cloud.js does, optionally; a copy it saved is read by liveNewer()). */
 (function(){
   "use strict";
   window.STUDENT_SITE = true;
@@ -18,8 +18,10 @@
     window.addEventListener("message", function(ev){ if (ev.data && ev.data.type === "site-config-preview" && !cfg) setConfig(ev.data.config); });
     var askTimer = setInterval(function(){ if (cfg) { clearInterval(askTimer); return; } try { window.parent.postMessage({ type: "student-site-ready" }, "*"); } catch (e) {} }, 300);
   }
-  else fetch("site-config.json?t=" + Date.now(), { cache: "no-store" }).then(function(r){ return r.ok ? r.json() : null; }).then(setConfig).catch(function(){ setConfig(null); });
+  else fetch("site-config.json?t=" + Date.now(), { cache: "no-store" }).then(function(r){ return r.ok ? r.json() : null; }).then(function(c){ setConfig(liveNewer(c)); }).catch(function(){ setConfig(liveNewer(null)); });
 
+  // X102: a settings copy the teacher pushed through the cloud service (saved here by student-cloud.js) wins when it is newer than the published file
+  function liveNewer(c){ try { var lc = JSON.parse(localStorage.getItem(PREFIX + "livecfg")); if (lc && lc.config && (!c || String(lc.config.builtAt || "") > String(c.builtAt || ""))) return lc.config; } catch (e) {} return c; }
   function filterConfig(conf, c){
     var o = JSON.parse(JSON.stringify(conf || {})), games = CLASS_MODE ? {} : (c.games || {});   // X89: the teacher's class view shows every game, switched off or not
     o.mode = null;   // students pick their own mode (Practice or Test)

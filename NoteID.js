@@ -1034,7 +1034,7 @@
         return b.group ? '<div class="ggroup" style="--gc:' + b.group.color + '" title="' + escapeHtml(b.group.name) + '">' + cards + '</div>' : cards;
       }).join("") +
       '<button type="button" class="gcard add" data-action="add-type" title="Add a game" aria-label="Add a game"><i class="ti ti-plus" aria-hidden="true"></i></button>' +
-      '<span class="spacer"></span>' +
+      '<span class="spacer"></span>' + '<div class="ss-msgs" id="ssMsgs">' + (window.ssMsgsHtml ? window.ssMsgsHtml() : '') + '</div>' +
       '<button type="button" class="gear" data-action="arrange-games" title="Order, groups and look of the game buttons" aria-label="Order, groups and look"><i class="ti ti-layout-list" aria-hidden="true"></i></button>' +
       '<button type="button" class="gear" data-action="edit-type" data-type="' + mt.id + '" title="Game settings" aria-label="Game settings"><i class="ti ti-settings" aria-hidden="true"></i></button></div>';
     var legend = '<div class="slegend">' + stateList().map(function(x){ return '<span class="sl" style="--c:' + x.color + '" data-tip="' + escapeHtml(x.tip) + '"><i class="ti ' + x.icon + '" aria-hidden="true"></i>' + escapeHtml(x.label) + '</span>'; }).join("") +
@@ -2444,7 +2444,7 @@
     e.updated = new Date().toISOString();
     saveResults();
   }
-  window.ssRejectTest = function(u){ try { if (!u) return; var r = results[u.sid]; if (r) { if (u.prev) r[u.key] = JSON.parse(u.prev); else delete r[u.key]; saveResults(); } if (u.histT) { history = history.filter(function(h){ return h.t !== u.histT; }); saveHistory(); } } catch (e) {} };
+  window.ssRejectTest = function(u, keep){ try { if (!u) return; var r = results[u.sid]; if (r) { if (u.prev) r[u.key] = JSON.parse(u.prev); else delete r[u.key]; saveResults(); } if (u.histT) { if (keep) { history.forEach(function(h){ if (h.t === u.histT) { h.mode = "practice test"; h.counted = false; } }); } else history = history.filter(function(h){ return h.t !== u.histT; }); saveHistory(); } } catch (e) {} };
   function resetRound(s){ s.correct = 0; s.attempts = 0; s.misses = 0; s.streak = 0; s.best = 0; s.logged = false; }
 
   function finishCorrectTimer(s, ms){

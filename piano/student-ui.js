@@ -2,7 +2,7 @@
    session timer, the "show my session" screen, today's focus message, and the teacher-only controls blocked. */
 (function(){
   "use strict";
-  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X99b";
+  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X101";   // X101 (c13): failing class tests need no PIN; a test cut off by the end of class is saved as a practice test with the score so far
   function lg(k){ try { return localStorage.getItem(P + k); } catch (e) { return null; } }
   function ls(k, v){ try { localStorage.setItem(P + k, v); } catch (e) {} }
   function jget(k, d){ try { var v = JSON.parse(lg(k)); return v == null ? d : v; } catch (e) { return d; } }
@@ -123,7 +123,7 @@
     var sc = document.getElementById("stageCard"); if (sc && sc.classList.contains("playing")) sess.synth = (sess.synth || 0) + 1;
   }, true);
 
-  var curKey = null, curQ = { title: "", mode: "" }, qWall = 0, gShown = 0, fsSince = 0, fsGone = 0, lastTickT = Date.now(), prevState = "off", prevKey = null, cfgReady = false, pausedSince = 0, needTap = false;
+  var curKey = null, curQ = { title: "", mode: "" }, qWall = 0, gShown = 0, fsSince = 0, fsGone = 0, lastTickT = Date.now(), prevState = "off", prevKey = null, cfgReady = false, pausedSince = 0, needTap = false, roundOk = 0, roundN = 0;   // roundOk / roundN: this test round so far (for a test cut off by the end of class)
   window.ssInClass = function(){ return cfgReady && inClass(); };
   function fsOk(){
     if (document.visibilityState !== "visible") return false;
@@ -174,6 +174,7 @@
   window.addEventListener("ss-attempt", function(ev){
     var d = ev.detail || {}; if (!sess) return;
     var m = modeName(d.mode), g = gameRec(d.title + "|" + m, d.title, m), wall = Math.min(7200, (Date.now() - (qWall || Date.now())) / 1000);   // how long the question was ON SCREEN, active or not
+    if (m === "test") { roundN++; if (d.ok) roundOk++; }
     if (d.ok) g.right++; else g.wrong++;
     g.qsec += wall; g.qn++; if (wall < 1.2) g.rapid = (g.rapid || 0) + 1; g.last = Date.now();
     sess.qlog.push([Math.round(wall * 10) / 10, d.ok ? 1 : 0, m === "test" ? 1 : 0]); if (sess.qlog.length > 400) sess.qlog = sess.qlog.slice(-400);
@@ -190,7 +191,9 @@
   }
   function stopTestLeft(reason){
     if (!sess) return;
-    sess.tests.push({ t: Date.now(), title: curQ.title, correct: 0, total: 0, passed: false, accepted: false, stopped: reason });
+    var cut = reason === "class ended";   // X101: class ended mid-test -> a PRACTICE test, never counted, with the score up to the last answered question
+    sess.tests.push({ t: Date.now(), title: curQ.title, correct: roundOk, total: roundN, passed: false, accepted: cut ? true : false, stopped: reason, practice: cut });
+    roundOk = roundN = 0;
     saveSession(); curKey = null; stopGame(); refresh(true);
   }
   // class ends: a warning for the last 10 seconds, then the session closes and a new "outside class" one starts (a class starting opens a new class session straight away)
@@ -233,7 +236,7 @@
   function testLine(t){
     var kind = t.practice ? "practice" : "class";
     var st = t.stopped ? "stopped: " + esc(t.stopped) : (t.practice ? "practice test, not counted" : (t.accepted === true ? "score kept" : t.accepted === false ? "score cleared" : "waiting for the PIN"));
-    return '<div class="ss-test ' + kind + '"><b>' + (t.practice ? "PRACTICE TEST" : "TEST") + '</b> ' + esc(t.title) + (t.stopped ? "" : ' &middot; ' + t.correct + '/' + t.total + ' &middot; ' + (t.passed ? "Passed" : "Not passed")) + ' &middot; <span>' + st + '</span> <small>' + hm(new Date(t.t)) + '</small></div>';
+    return '<div class="ss-test ' + kind + '"><b>' + (t.practice ? "PRACTICE TEST" : "TEST") + '</b> ' + esc(t.title) + ((t.stopped && !t.total) ? "" : ' &middot; ' + t.correct + '/' + t.total + ' &middot; ' + (t.passed ? "Passed" : "Not passed")) + ' &middot; <span>' + st + '</span> <small>' + hm(new Date(t.t)) + '</small></div>';
   }
   function sessBody(x, cur){
     var gs = Object.keys(x.games || {}).map(function(k){ return x.games[k]; }).sort(function(a, b){ return (b.last || 0) - (a.last || 0); });   // newest first
@@ -407,6 +410,7 @@
     if (PREVIEWISH) return true;
     var isTest = opts && ((opts.student && !opts.studentPractice) || opts.mode === "test");
     if (!isTest) { window.__ssTestKind = null; return true; }
+    roundOk = roundN = 0;
     if (!inClass()) { window.__ssTestKind = "practice"; return true; }
     if (window.__ssAllow) { window.__ssAllow = false; window.__ssTestKind = "class"; return true; }
     pinPrompt({ title: "Teacher PIN to start a test", sub: "Ask your teacher. Practice does not need a PIN.", okLabel: "Start test", cancelLabel: "Cancel", onOk: function(){ window.__ssAllow = true; retry(); } });
@@ -438,12 +442,17 @@
   }
   window.addEventListener("ss-finish", function(ev){
     var d = ev.detail || {}; if (PREVIEWISH || !d.test) return;
-    var practice = window.__ssTestKind === "practice";
+    var practice = window.__ssTestKind === "practice"; roundOk = roundN = 0;
     var rec = { t: Date.now(), title: d.title, correct: d.correct, total: d.total, passed: !!d.passed, accepted: null, undo: d.undo };
     if (practice) {   // outside class: a practice test. Its score does not count (results put back as they were); the history line stays, marked as practice
       try { window.ssRejectTest && window.ssRejectTest(d.undo, true); } catch (e) {}
       if (sess) { sess.tests.push({ t: rec.t, title: rec.title, correct: rec.correct, total: rec.total, passed: rec.passed, accepted: true, practice: true }); saveSession(); }
       refresh(true); return;
+    }
+    if (!rec.passed) {   // X101: a test that was NOT passed needs no PIN; the score is simply kept, the student just sees it and continues
+      if (sess) { sess.tests.push({ t: rec.t, title: rec.title, correct: rec.correct, total: rec.total, passed: false, accepted: true }); saveSession(); }
+      var ov = overlay('<h2>Test finished: ' + rec.correct + '/' + rec.total + '</h2><p>Not passed this time. Your score was saved. Practice, then try again.</p><div class="ss-btns"><button type="button" class="ss-btn primary" id="ssFailOk">OK</button></div>', "fail");
+      ov.querySelector("#ssFailOk").onclick = function(){ ov.remove(); stopGame(); refresh(true); }; return;
     }
     ls("pendingTest", JSON.stringify(rec));
     if (sess) { sess.tests.push({ t: rec.t, title: rec.title, correct: rec.correct, total: rec.total, passed: rec.passed, accepted: null }); saveSession(); }

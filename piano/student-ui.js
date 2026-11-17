@@ -2,7 +2,7 @@
    session timer, the "show my session" screen, today's focus message, and the teacher-only controls blocked. */
 (function(){
   "use strict";
-  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X99";
+  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X99b";
   function lg(k){ try { return localStorage.getItem(P + k); } catch (e) { return null; } }
   function ls(k, v){ try { localStorage.setItem(P + k, v); } catch (e) {} }
   function jget(k, d){ try { var v = JSON.parse(lg(k)); return v == null ? d : v; } catch (e) { return d; } }
@@ -52,7 +52,7 @@
       ".ss-pmin b.g { color: #1a8a4a; } .ss-pmin b.y { color: #c98a00; } .ss-pmin b.r { color: #c0392b; } .ss-pst.g { color: #1a8a4a; } .ss-pst.y { color: #c98a00; } .ss-pst.r { color: #c0392b; }" +
       ".ss-tile b.y { color: #c98a00; } .ss-tile b.r { color: #c0392b; }" +
       ".ss-end { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 100000; background: #c0392b; color: #fff; font-weight: 800; padding: 10px 22px; border-radius: 12px; font-size: 18px; box-shadow: 0 4px 16px rgba(0,0,0,.35); }" +
-      ".ss-msgs { flex: 1 1 240px; min-width: 200px; display: flex; flex-wrap: wrap; gap: 6px; align-items: stretch; } .ss-msg { flex: 1 1 180px; border: 3px solid var(--mc); background: color-mix(in srgb, var(--mc) 14%, #fff); border-radius: 12px; padding: 4px 10px; font-weight: 600; font-size: 15px; color: #1d1b2e; line-height: 1.25; } .gamebar .spacer { display: none; }" +
+      ".ss-msgs { flex: 1 1 240px; min-width: 200px; display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; justify-content: space-evenly; } .ss-msg { flex: 1 1 160px; max-width: 340px; display: flex; align-items: center; justify-content: center; text-align: center; border: 3px solid var(--mc); background: color-mix(in srgb, var(--mc) 14%, #fff); border-radius: 12px; padding: 4px 10px; font-weight: 600; font-size: 15px; color: #1d1b2e; line-height: 1.25; } .gamebar .spacer { display: none; }" +
       ".ss-q2 { font-size: 12px; color: #444; line-height: 1.5; margin-bottom: 3px; } .ss-q2 b { color: #2a2170; }" +
       ".ss-strip { display: flex; align-items: flex-end; gap: 2px; height: 32px; margin: 3px 0 6px; overflow: hidden; } .ss-strip i { display: block; width: 6px; flex: 0 0 6px; border-radius: 2px 2px 0 0; } .ss-strip i.ok { background: #2fb067; } .ss-strip i.no { background: #d64545; } .ss-strip i.long { outline: 2px solid #e6a817; }" +
       ".ss-test.practice { background: #dff4f4; border-left-color: #1a9ea0; } .ss-test.practice b { background: #1a9ea0; color: #fff; } .ss-tb.pt { background: #1a9ea0; color: #fff; } .ss-tbl tr.pt td { background: #dff4f4; }" +
@@ -99,7 +99,7 @@
   var sess = null, lastAct = Date.now(), tick = null, schedKnown = false;
   var SFIELDS = ["openSec", "idleSec", "offSec", "lastOffSec", "lastOffAt", "fsExits", "fsLast", "synth", "stills"];
   function hasSched(){ return schedKnown; }
-  function inClass(){ return !schedKnown || !!period(); }   // no class times known at all = always counts as class
+  function inClass(){ return schedKnown && !!period(); }   // X99b: no class times published = never "class" (no full-screen force, no PIN for tests)
   function bucketNow(){ var per = period(); return dstr() + ":" + (inClass() ? "c" + (per ? per.start : "") : "o"); }
   function newSess(){
     var per = period(), o = { id: Date.now().toString(36), name: me.name, owner: me.owner, borrowed: me.borrowed, date: dstr(), start: Date.now(), last: Date.now(), activeSec: 0, closed: false, games: {}, tests: [], qlog: [], inClass: inClass(), pname: per ? per.name : "", bucket: bucketNow() };
@@ -319,7 +319,7 @@
   }
   window.ssMsgsHtml = function(){
     var list = cfg.messages && cfg.messages.length ? cfg.messages : (cfg.today ? [{ html: esc(cfg.today), color: "#2fb067" }] : []);
-    return list.map(function(m){ var c = /^#[0-9a-f]{6}$/i.test(m.color) ? m.color : "#3a2f8f"; return '<div class="ss-msg" style="--mc:' + c + '">' + cleanHtml(m.html) + '</div>'; }).join("");
+    return list.map(function(m){ var c = /^#[0-9a-f]{6}$/i.test(m.color) ? m.color : "#3a2f8f"; return '<div class="ss-msg" style="--mc:' + c + '"><div class="ss-mi">' + cleanHtml(m.html) + '</div></div>'; }).join("");
   };
   function fillMsgs(){ var e = document.getElementById("ssMsgs"); if (e) e.innerHTML = window.ssMsgsHtml(); }
   // ---- if the game would push off the screen, the whole page is scaled down to fit (no scrolling) ----
@@ -364,7 +364,7 @@
       '<div class="ss-scroll"><div class="ss-sec">This session <span id="ssCurBadge"></span></div><div class="ss-pmore" id="ssMore"></div><div id="ssCur"></div>' +
       '<div class="ss-sec">Earlier sessions</div><div id="ssHist">' + histHtml() + '</div>' +
       (code ? '<div class="ss-code">Code of the day <b>' + code + '</b></div>' : "") +
-      '<button type="button" class="ss-pb" id="ssTeach" title="teacher">teacher &middot; site X99</button></div></div>';
+      '<button type="button" class="ss-pb" id="ssTeach" title="teacher">teacher &middot; site X99b</button></div></div>';
     [].forEach.call(host.querySelectorAll("details"), function(e){ if (openIds.indexOf(e.getAttribute("data-sid")) >= 0) e.open = true; });
     document.getElementById("ssTeach").onclick = function(){ teacherGate(whoMenu); };
     var ns = host.querySelector(".ss-scroll"); if (ns) ns.scrollTop = keep;

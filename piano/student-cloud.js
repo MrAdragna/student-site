@@ -1,4 +1,4 @@
-/* student-cloud.js (X104, c13, 17 Nov 2026). OPTIONAL cloud link, loaded after student-ui.js. Does NOTHING unless the published settings contain cloud.url.
+/* student-cloud.js (X106: the ping answer carries paired / hold, passed on as the page event ss-live; pings every 30 s; X104, c13, 17 Nov 2026). OPTIONAL cloud link, loaded after student-ui.js. Does NOTHING unless the published settings contain cloud.url.
    - Only during class: every ~45 s (random +/- 5 s) one small status ping (random device code, state, game, right / wrong, active seconds). NO name unless
      cfg.cloud.names is true AND the service allows it. Outside class: no network at all.
    - Auto offline mode: a ping that fails or takes longer than 3 s marks this Chromebook "offline" (the site works exactly as before, everything stays on the device);
@@ -7,7 +7,7 @@
      reloads itself when no game is being played. */
 (function(){
   "use strict";
-  var P = window.SS_PREFIX || "ss:", TIMEOUT = 3000, EVERY = 45000, BACKOFF = [30000], TEST = /[?&]cloudtest=1(&|$)/.test(location.search);   // X103b: open the student page with ?cloudtest=1 to ping outside class (for your own testing)
+  var P = window.SS_PREFIX || "ss:", TIMEOUT = 3000, EVERY = 30000, BACKOFF = [30000], TEST = /[?&]cloudtest=1(&|$)/.test(location.search);   // X103b: open the student page with ?cloudtest=1 to ping outside class (for your own testing)
   function lg(k){ try { return localStorage.getItem(P + k); } catch (e) { return null; } }
   function ls(k, v){ try { localStorage.setItem(P + k, v); } catch (e) {} }
   var cfg = null, url = "", fails = 0, timer = null, busy = false, reloadWait = null;
@@ -31,8 +31,14 @@
     var body = { id: device(), state: s.state || "off", game: s.game, mode: s.mode, right: s.right, wrong: s.wrong, active: s.active, inClass: !!s.inClass, build: window.SS_BUILD || "" };
     if (cfg.cloud && cfg.cloud.names === true && s.name) body.name = s.name;
     call("/api/hb", { method: "POST", headers: { "content-type": "text/plain" }, body: JSON.stringify(body) }).then(function(r){
-      busy = false; goOnline(); C.pings++; if (r && r.v) versionSeen(r.v); later(jitter(EVERY));
-    }, function(){ busy = false; goOffline(); later(BACKOFF[Math.min(fails - 1, BACKOFF.length - 1)]); });
+      busy = false; goOnline(); C.pings++; if (r && r.v) versionSeen(r.v); live(r); later(jitter(EVERY));
+    }, function(){ busy = false; goOffline(); live(null); later(BACKOFF[Math.min(fails - 1, BACKOFF.length - 1)]); });
+  }
+  // X106: what the teacher's side says about THIS device: paired or not (a random code, no names), and the live "hold" (learning / review is up, or bell-work is off). No answer = no gate (offline mode is the old behavior).
+  function live(r){
+    var d = r ? { paired: r.paired, hold: !!r.hold, why: r.why || "", code: device().slice(0, 6) } : { offline: true, code: device().slice(0, 6) };
+    C.code = d.code; C.paired = d.paired; C.hold = !!d.hold;
+    try { window.dispatchEvent(new CustomEvent("ss-live", { detail: d })); } catch (e) {}
   }
   function versionSeen(v){
     if (!v || String(v) === (lg("cloudver") || "0")) return;   // v = 0: the teacher has pushed nothing yet

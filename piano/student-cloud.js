@@ -13,6 +13,7 @@
   var cfg = null, url = "", fails = 0, timer = null, busy = false, reloadWait = null;
   var C = window.__ssCloud = { online: null, lastOk: 0, lastTry: 0, fails: 0, pings: 0 };
   function device(){ var d = lg("device"); if (!d || !/^[a-z0-9]{8,32}$/.test(d)) { d = ""; var a = new Uint8Array(12); (window.crypto || {}).getRandomValues ? crypto.getRandomValues(a) : a.forEach(function(_, i){ a[i] = Math.random() * 256; }); for (var i = 0; i < a.length; i++) d += (a[i] % 36).toString(36); ls("device", d); } return d; }
+  window.ssDeviceCode = function(){ return device().slice(0, 6); };   // X108: the page shows the code at once when it opens
   function st(){ try { return window.ssStatus ? window.ssStatus() : null; } catch (e) { return null; } }
   function later(ms){ clearTimeout(timer); timer = setTimeout(tick, ms); }
   function jitter(ms){ return ms + (Math.random() * 10000 - 5000); }
@@ -38,6 +39,7 @@
   function live(r){
     var d = r ? { paired: r.paired, hold: !!r.hold, why: r.why || "", code: device().slice(0, 6) } : { offline: true, code: device().slice(0, 6) };
     C.code = d.code; C.paired = d.paired; C.hold = !!d.hold;
+    if (r) { try { localStorage.setItem(P + "pairedlast", r.paired ? "1" : "0"); } catch (e) {} }   // X108: a device already paired does not flash its code on the next visit
     try { window.dispatchEvent(new CustomEvent("ss-live", { detail: d })); } catch (e) {}
   }
   function versionSeen(v){

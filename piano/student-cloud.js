@@ -7,7 +7,7 @@
      reloads itself when no game is being played. */
 (function(){
   "use strict";
-  var P = window.SS_PREFIX || "ss:", TIMEOUT = 3000, EVERY = 45000, BACKOFF = [30000];
+  var P = window.SS_PREFIX || "ss:", TIMEOUT = 3000, EVERY = 45000, BACKOFF = [30000], TEST = /[?&]cloudtest=1(&|$)/.test(location.search);   // X103b: open the student page with ?cloudtest=1 to ping outside class (for your own testing)
   function lg(k){ try { return localStorage.getItem(P + k); } catch (e) { return null; } }
   function ls(k, v){ try { localStorage.setItem(P + k, v); } catch (e) {} }
   var cfg = null, url = "", fails = 0, timer = null, busy = false, reloadWait = null;
@@ -25,10 +25,10 @@
   function goOffline(){ if (C.online !== false) { try { window.dispatchEvent(new CustomEvent("ss-cloud", { detail: { online: false } })); } catch (e) {} } C.online = false; fails++; C.fails = fails; }
   function tick(){
     var s = st();
-    if (!s || s.preview || !s.inClass) { later(5000); return; }   // outside class (or preview): no network, just look again in 5 s
+    if (!s || s.preview || (!s.inClass && !TEST)) { later(5000); return; }   // outside class (or preview): no network, just look again in 5 s
     if (busy) { later(2000); return; }
     busy = true; C.lastTry = Date.now();
-    var body = { id: device(), state: s.state || "off", game: s.game, mode: s.mode, right: s.right, wrong: s.wrong, active: s.active, inClass: true, build: window.SS_BUILD || "" };
+    var body = { id: device(), state: s.state || "off", game: s.game, mode: s.mode, right: s.right, wrong: s.wrong, active: s.active, inClass: !!s.inClass, build: window.SS_BUILD || "" };
     if (cfg.cloud && cfg.cloud.names === true && s.name) body.name = s.name;
     call("/api/hb", { method: "POST", headers: { "content-type": "text/plain" }, body: JSON.stringify(body) }).then(function(r){
       busy = false; goOnline(); C.pings++; if (r && r.v) versionSeen(r.v); later(jitter(EVERY));

@@ -4,7 +4,7 @@
 //
 /*
   HANDOFF — NoteID.js
-  Version: 26 (c12, X89b): a blank one-word skill stays blank (autosave no longer refills it). Version: 25 (c12, X89): level editor autosaves every edit; Save/Cancel moved to the header (Save just closes, Cancel restores the levels as they were when the editor opened and saves that); clicking outside = Save. Version: 24 (c12, X88b): the Preview Student Site tab no longer reloads / re-renders on every window focus (that swallowed the next click, so leaving the preview needed two clicks); tabs are not rebuilt when unchanged. Version: 23 (prior: 22, see "NoteID (revert).js"; pairs with NoteID.html v23). EDITED BY c12 at the user's request (X88, 13 Nov 2026), not by c11: (1) `typeof DataStore` instead of `window.DataStore` (the storage library declares `const DataStore`, which is NOT a window property, so the Plan tab said "The storage helper (lib/storage.js) has no loadJSON"); (2) new tab "Preview Student Site" (view "site": an iframe to ../StudentSite/StudentSite.html?view=student, handed this app's folder handle); (3) Plan > options column: grey = known from the previous level, blue "+" = added, red "-" = removed (newVsPrevious).
+  Version: 28 (c12, X97): when a piano key is clicked as the answer only that key lights up (the same note in another octave no longer does). Version: 27 (c12, X90): the Preview Student Site tab shows the full Student site teacher panel (settings + preview). Version: 26 (c12, X89b): a blank one-word skill stays blank (autosave no longer refills it). Version: 25 (c12, X89): level editor autosaves every edit; Save/Cancel moved to the header (Save just closes, Cancel restores the levels as they were when the editor opened and saves that); clicking outside = Save. Version: 24 (c12, X88b): the Preview Student Site tab no longer reloads / re-renders on every window focus (that swallowed the next click, so leaving the preview needed two clicks); tabs are not rebuilt when unchanged. Version: 23 (prior: 22, see "NoteID (revert).js"; pairs with NoteID.html v23). EDITED BY c12 at the user's request (X88, 13 Nov 2026), not by c11: (1) `typeof DataStore` instead of `window.DataStore` (the storage library declares `const DataStore`, which is NOT a window property, so the Plan tab said "The storage helper (lib/storage.js) has no loadJSON"); (2) new tab "Preview Student Site" (view "site": an iframe to ../StudentSite/StudentSite.html?view=student, handed this app's folder handle); (3) Plan > options column: grey = known from the previous level, blue "+" = added, red "-" = removed (newVsPrevious).
   Version: 22 (prior: 21, see "NoteID (revert).js"; pairs with NoteID.html v22)
   Conversation: "c11: NoteID (2)"  |  History: c10: NoteID (1) <- the original NoteID conversation (Round 1, 2026-10-28)  |  Helper docs: claude/NoteID-Handoff.md, claude/Game-Style-Guide.md, claude/NoteID-Progress-Integration-Plan.md
   Last updated: 2026-11-11 (v20)
@@ -1109,7 +1109,7 @@
   }
 
   // ---------- History (this device) ----------
-  function fmtDuration(sec){ sec = Math.round(sec); var m = Math.floor(sec / 60), s = sec % 60; return m ? m + " min" + (s >= 10 ? " " + s + " s" : "") : s + " s"; }
+  function fmtDuration(sec){ sec = Math.round(sec); var h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60; return h ? h + " h " + m + " min" : (m ? m + " min" + (s >= 10 ? " " + s + " s" : "") : s + " s"); }
   function renderHistory(){
     var host = $("historyView");
     var rows = history.slice().reverse().map(function(h){
@@ -2411,7 +2411,7 @@
     return '<i class="ti ' + m.icon + '" aria-hidden="true"></i> ' + m.label + (s.mode === "learn" ? " · help: " + STAGE_LABEL[learnState(s).stage] : "");
   }
   function scoreKindText(s){
-    return s.scoreKind === "student" ? "Saved on this Chromebook" : (s.scoreKind === "real" ? "Class score" : "Practice score");
+    return s.scoreKind === "student" ? "" : (s.scoreKind === "real" ? "Class score" : "Practice score");
   }
   function updateHud(s){
     var a = $g("hudStats"), d = $g("hudMode");

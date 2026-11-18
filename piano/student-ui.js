@@ -2,7 +2,7 @@
    session timer, the "show my session" screen, today's focus message, and the teacher-only controls blocked. */
 (function(){
   "use strict";
-  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X105";   // X101 (c13): failing class tests need no PIN; a test cut off by the end of class is saved as a practice test with the score so far
+  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X106";   // X101 (c13): failing class tests need no PIN; a test cut off by the end of class is saved as a practice test with the score so far
   function lg(k){ try { return localStorage.getItem(P + k); } catch (e) { return null; } }
   function ls(k, v){ try { localStorage.setItem(P + k, v); } catch (e) {} }
   function jget(k, d){ try { var v = JSON.parse(lg(k)); return v == null ? d : v; } catch (e) { return d; } }
@@ -515,6 +515,23 @@
     try { var pend = jget("pendingTest", null); if (pend && pend.t && !PREVIEWISH) setTimeout(function(){ testEnd(pend); }, 1500); } catch (e) {}   // a test ended but the PIN was not given yet (page reloaded): ask again
   }
   // X104: a settings push that PAUSES the site covers the page at once (even in the middle of a question); un-pausing / other changes reload the page when it is idle (student-cloud.js)
+  // X106: live answers from the cloud service (student-cloud.js): HOLD (learning / review is up or bell-work is off: the page is covered and counts nothing) and PAIRING (the page shows its device code until the teacher pairs it to a student on his own computer).
+  var holdOv = null, pairOv = null;
+  function skipPair(){ return !!jget("nopair:" + dstr(), false); }
+  window.addEventListener("ss-live", function(ev){
+    var d = ev.detail || {}; if (!cfgReady || PREVIEWISH || /[?&]class=1/.test(location.search)) return;
+    if (d.hold && !d.offline) {
+      var msg = d.why === "review" ? "Learning / review time. Your screen is paused. Look at the classroom screen." : (d.why === "bell" ? "Bell-work is paused. Look at the classroom screen for what to do." : "Your teacher has paused the site. Look at the classroom screen for what to do.");
+      if (!holdOv) holdOv = overlay('<h2>Eyes up</h2><p>' + esc(msg) + '</p>', "gate hold");
+      else { var pp = holdOv.querySelector("p"); if (pp && pp.textContent !== msg) pp.textContent = msg; }
+    } else if (holdOv) { holdOv.remove(); holdOv = null; }
+    var need = !!(cfg.pairing && cfg.pairing.on) && !d.offline && d.paired === false && inClass() && !skipPair();
+    if (need && !pairOv) {
+      pairOv = overlay('<h2>Your device code</h2><div style="font:800 72px/1.1 ui-monospace,Menlo,monospace;letter-spacing:6px;margin:10px 0">' + esc(String(d.code || "")) + '</div><p>Show this code to your teacher.</p>' +
+        ((cfg.pairing && cfg.pairing.skip === false) ? "" : '<div style="margin-top:26px"><a href="#" id="ssNoPair" style="font-size:12px;color:#888;text-decoration:underline;opacity:.7">Start without pairing</a></div>'), "gate pair");
+      var np = pairOv.querySelector("#ssNoPair"); if (np) np.onclick = function(e){ e.preventDefault(); ls("nopair:" + dstr(), "true"); if (pairOv) { pairOv.remove(); pairOv = null; } };
+    } else if (!need && pairOv) { pairOv.remove(); pairOv = null; }
+  });
   window.addEventListener("ss-livecfg", function(ev){
     var n = ev.detail || {}; if (!cfgReady || !n.paused || cfg.paused) return;
     cfg.paused = true; cfg.pausedMsg = n.pausedMsg;

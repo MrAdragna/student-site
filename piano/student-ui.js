@@ -2,7 +2,7 @@
    session timer, the "show my session" screen, today's focus message, and the teacher-only controls blocked. */
 (function(){
   "use strict";
-  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X107";   // X101 (c13): failing class tests need no PIN; a test cut off by the end of class is saved as a practice test with the score so far
+  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X108";   // X101 (c13): failing class tests need no PIN; a test cut off by the end of class is saved as a practice test with the score so far
   function lg(k){ try { return localStorage.getItem(P + k); } catch (e) { return null; } }
   function ls(k, v){ try { localStorage.setItem(P + k, v); } catch (e) {} }
   function jget(k, d){ try { var v = JSON.parse(lg(k)); return v == null ? d : v; } catch (e) { return d; } }
@@ -502,7 +502,7 @@
     };
   }
   function init(c){
-    cfg = c || {}; schedKnown = !!((cfg.classDays && Object.keys(cfg.classDays).length) || (cfg.schedule && cfg.schedule.length)); cfgReady = true; try { window.ssCoverCheck && window.ssCoverCheck(); } catch (e) {}   // X104: schedKnown first, else the class cover waited for the next 5 s check
+    cfg = c || {}; schedKnown = !!((cfg.classDays && Object.keys(cfg.classDays).length) || (cfg.schedule && cfg.schedule.length)); cfgReady = true; pairAtOpen(); try { window.ssCoverCheck && window.ssCoverCheck(); } catch (e) {}   // X104: schedKnown first, else the class cover waited for the next 5 s check
     var bar = document.createElement("div"); bar.id = "ssBar"; bar.className = "ss-bar";
     document.body.appendChild(bar); if (!PREVIEWISH || /[?&]preview=1/.test(location.search)) document.body.classList.add("ss-on");
     schedKnown = !!((cfg.classDays && Object.keys(cfg.classDays).length) || (cfg.schedule && cfg.schedule.length));
@@ -518,6 +518,15 @@
   // X106: live answers from the cloud service (student-cloud.js): HOLD (learning / review is up or bell-work is off: the page is covered and counts nothing) and PAIRING (the page shows its device code until the teacher pairs it to a student on his own computer).
   var holdOv = null, pairOv = null;
   function skipPair(){ return !!jget("nopair:" + dstr(), false); }
+  function showPair(code){   // X108: the code is large, and it is shown by the page itself the moment it opens (no wait for the first answer from the service)
+    if (pairOv) return;
+    pairOv = overlay('<h2 style="font-size:clamp(28px,5vw,56px)">Your device code</h2><div style="font:800 clamp(96px,26vw,300px)/1.05 ui-monospace,Menlo,monospace;letter-spacing:.06em;margin:.1em 0">' + esc(String(code || "")) + '</div><p style="font-size:clamp(18px,2.6vw,32px)">Show this code to your teacher.</p>' +
+      ((cfg.pairing && cfg.pairing.skip === false) ? "" : '<div style="margin-top:26px"><a href="#" id="ssNoPair" style="font-size:12px;color:#888;text-decoration:underline;opacity:.7">Start without pairing</a></div>'), "gate pair");
+    var np = pairOv.querySelector("#ssNoPair"); if (np) np.onclick = function(e){ e.preventDefault(); ls("nopair:" + dstr(), "true"); if (pairOv) { pairOv.remove(); pairOv = null; } };
+  }
+  function pairAtOpen(){
+    try { if (PREVIEWISH || /[?&]class=1/.test(location.search) || !(cfg.pairing && cfg.pairing.on) || !inClass() || skipPair()) return; if (localStorage.getItem(P + "pairedlast") === "1") return; var c = window.ssDeviceCode && window.ssDeviceCode(); if (c) showPair(c); } catch (e) {}
+  }
   window.addEventListener("ss-live", function(ev){
     var d = ev.detail || {}; if (!cfgReady || PREVIEWISH || /[?&]class=1/.test(location.search)) return;
     if (d.hold && !d.offline) {
@@ -526,11 +535,8 @@
       else { var pp = holdOv.querySelector("p"); if (pp && pp.textContent !== msg) pp.textContent = msg; }
     } else if (holdOv) { holdOv.remove(); holdOv = null; }
     var need = !!(cfg.pairing && cfg.pairing.on) && !d.offline && d.paired === false && inClass() && !skipPair();
-    if (need && !pairOv) {
-      pairOv = overlay('<h2>Your device code</h2><div style="font:800 72px/1.1 ui-monospace,Menlo,monospace;letter-spacing:6px;margin:10px 0">' + esc(String(d.code || "")) + '</div><p>Show this code to your teacher.</p>' +
-        ((cfg.pairing && cfg.pairing.skip === false) ? "" : '<div style="margin-top:26px"><a href="#" id="ssNoPair" style="font-size:12px;color:#888;text-decoration:underline;opacity:.7">Start without pairing</a></div>'), "gate pair");
-      var np = pairOv.querySelector("#ssNoPair"); if (np) np.onclick = function(e){ e.preventDefault(); ls("nopair:" + dstr(), "true"); if (pairOv) { pairOv.remove(); pairOv = null; } };
-    } else if (!need && pairOv) { pairOv.remove(); pairOv = null; }
+    if (need && !pairOv) showPair(d.code);
+    else if (!need && pairOv) { pairOv.remove(); pairOv = null; }
   });
   window.addEventListener("ss-livecfg", function(ev){
     var n = ev.detail || {}; if (!cfgReady || !n.paused || cfg.paused) return;

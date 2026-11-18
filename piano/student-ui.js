@@ -2,7 +2,7 @@
    session timer, the "show my session" screen, today's focus message, and the teacher-only controls blocked. */
 (function(){
   "use strict";
-  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X106";   // X101 (c13): failing class tests need no PIN; a test cut off by the end of class is saved as a practice test with the score so far
+  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X107";   // X101 (c13): failing class tests need no PIN; a test cut off by the end of class is saved as a practice test with the score so far
   function lg(k){ try { return localStorage.getItem(P + k); } catch (e) { return null; } }
   function ls(k, v){ try { localStorage.setItem(P + k, v); } catch (e) {} }
   function jget(k, d){ try { var v = JSON.parse(lg(k)); return v == null ? d : v; } catch (e) { return d; } }
@@ -404,8 +404,8 @@
   function pinMsg(r){ return r.none ? "No teacher PIN has been set for this site yet." : (r.wait ? "Too many wrong tries. Wait " + r.wait + " seconds." : "That PIN is not right (" + r.left + (r.left === 1 ? " try" : " tries") + " left)."); }
   // o: { title, sub, okLabel, cancelLabel, onOk(), onCancel() }
   function pinPrompt(o){
-    var ov = overlay('<h2>' + esc(o.title) + '</h2>' + (o.sub ? '<p>' + o.sub + '</p>' : "") + '<input type="password" id="ssPinP" maxlength="40" autocomplete="off"><div class="ss-err" id="ssPinPE"></div><div class="ss-btns"><button type="button" class="ss-btn" id="ssPinPX">' + esc(o.cancelLabel || "Cancel") + '</button><button type="button" class="ss-btn primary" id="ssPinPOk">' + esc(o.okLabel || "Go") + '</button></div>');
-    var pi = ov.querySelector("#ssPinP"); pi.focus();
+    var ov = overlay('<h2>' + esc(o.title) + '</h2>' + (o.sub ? '<p>' + o.sub + '</p>' : "") + '<input type="text" id="ssPinP" maxlength="40" name="ssp-x" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" style="-webkit-text-security:disc;text-security:disc"><div class="ss-err" id="ssPinPE"></div><div class="ss-btns"><button type="button" class="ss-btn" id="ssPinPX">' + esc(o.cancelLabel || "Cancel") + '</button><button type="button" class="ss-btn primary" id="ssPinPOk">' + esc(o.okLabel || "Go") + '</button></div>');
+    var pi = ov.querySelector("#ssPinP"); pi.value = ""; pi.focus(); setTimeout(function(){ if (pi.value && !pi.__typed) pi.value = ""; }, 60); pi.addEventListener("keydown", function(){ pi.__typed = true; });   // X107: a browser that fills the box by itself gets it emptied again
     function go(){ verifyPin(pi.value).then(function(r){ if (r.ok) { ov.remove(); if (o.onOk) o.onOk(); } else { ov.querySelector("#ssPinPE").textContent = pinMsg(r); pi.value = ""; pi.focus(); } }); }
     ov.querySelector("#ssPinPOk").onclick = go; pi.onkeydown = function(e){ if (e.key === "Enter") go(); };
     ov.querySelector("#ssPinPX").onclick = function(){ ov.remove(); if (o.onCancel) o.onCancel(); };

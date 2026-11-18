@@ -2,7 +2,7 @@
    session timer, the "show my session" screen, today's focus message, and the teacher-only controls blocked. */
 (function(){
   "use strict";
-  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X104";   // X101 (c13): failing class tests need no PIN; a test cut off by the end of class is saved as a practice test with the score so far
+  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X105";   // X101 (c13): failing class tests need no PIN; a test cut off by the end of class is saved as a practice test with the score so far
   function lg(k){ try { return localStorage.getItem(P + k); } catch (e) { return null; } }
   function ls(k, v){ try { localStorage.setItem(P + k, v); } catch (e) {} }
   function jget(k, d){ try { var v = JSON.parse(lg(k)); return v == null ? d : v; } catch (e) { return d; } }
@@ -50,7 +50,7 @@
       ".ss-ov.still .ss-card, .ss-ov.still .ss-card * { text-align: center; } .ss-ov.still .ss-btns { justify-content: center; } .ss-ov.still .ss-card { display: flex; flex-direction: column; align-items: center; }" +
       ".ss-who { text-align: center; } .ss-psub { text-align: center; }" +
       ".ss-pmin b.g { color: #1a8a4a; } .ss-pmin b.y { color: #c98a00; } .ss-pmin b.r { color: #c0392b; } .ss-pst.g { color: #1a8a4a; } .ss-pst.y { color: #c98a00; } .ss-pst.r { color: #c0392b; }" +
-      ".ss-nocls .ho, .ss-nocls #ssSeg, .ss-nocls #ssFs { display: none !important; } .ss-tile b.y { color: #c98a00; } .ss-tile b.r { color: #c0392b; }" +
+      "#hudScore:empty { display: none !important; } .ss-nocls .ho, .ss-nocls #ssSeg, .ss-nocls #ssFs { display: none !important; } .ss-tile b.y { color: #c98a00; } .ss-tile b.r { color: #c0392b; }" +
       ".ss-end { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 100000; background: #c0392b; color: #fff; font-weight: 800; padding: 10px 22px; border-radius: 12px; font-size: 18px; box-shadow: 0 4px 16px rgba(0,0,0,.35); }" +
       ".ss-msgs { flex: 1 1 240px; min-width: 200px; display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; justify-content: space-evenly; } .ss-msg { flex: 1 1 160px; max-width: 340px; display: flex; align-items: center; justify-content: center; text-align: center; border: 3px solid var(--mc); background: color-mix(in srgb, var(--mc) 14%, #fff); border-radius: 12px; padding: 4px 10px; font-weight: 600; font-size: 15px; color: #1d1b2e; line-height: 1.25; } .gamebar .spacer { display: none; }" +
       ".ss-q2 { font-size: 12px; color: #444; line-height: 1.5; margin-bottom: 3px; } .ss-q2 b { color: #2a2170; }" +
@@ -99,7 +99,9 @@
   var sess = null, lastAct = Date.now(), tick = null, schedKnown = false;
   var SFIELDS = ["openSec", "idleSec", "offSec", "lastOffSec", "lastOffAt", "fsExits", "fsLast", "synth", "stills"];
   function hasSched(){ return schedKnown; }
-  function inClass(){ return schedKnown && !!period(); }   // X99b: no class times published = never "class" (no full-screen force, no PIN for tests)
+  var TESTCLASS = /[?&]cloudtest=1(&|$)/.test(location.search);   // X105: a page opened with ?cloudtest=1 behaves as if class is in session (cover, full screen, PIN tests, sidebar, check-ins)
+  window.ssTestClass = TESTCLASS;
+  function inClass(){ return TESTCLASS || (schedKnown && !!period()); }   // X99b: no class times published = never "class" (no full-screen force, no PIN for tests)
   function bucketNow(){ var per = period(); return dstr() + ":" + (inClass() ? "c" + (per ? per.start : "") : "o"); }
   function newSess(){
     var per = period(), o = { id: Date.now().toString(36), name: me.name, owner: me.owner, borrowed: me.borrowed, date: dstr(), start: Date.now(), last: Date.now(), activeSec: 0, closed: false, games: {}, tests: [], qlog: [], inClass: inClass(), pname: per ? per.name : "", bucket: bucketNow() };
@@ -294,7 +296,7 @@
       fb.className = "ss-fs" + (inFs ? "" : " out");
       fb.innerHTML = inFs ? '<span>On screen, unbroken</span><b>' + fmt((Date.now() - fsSince) / 1000) + '</b><small>' + exTxt + '</small>' : '<span>OFF SCREEN' + (fsGone ? ' for' : '') + '</span><b>' + (fsGone ? fmt((Date.now() - fsGone) / 1000) : "-") + '</b><small>' + (ex ? exTxt : "Waiting to start") + '</small>';
     }
-    var per = period(), ps = document.getElementById("ssPsub2"); if (ps) { var t = per ? per.name + " (" + ampm24(per.start) + " - " + ampm24(per.end) + ")" : "Outside class time"; if (ps.textContent !== t) ps.textContent = t; }
+    var per = period(), ps = document.getElementById("ssPsub2"); if (ps) { var t = per ? per.name + " (" + ampm24(per.start) + " - " + ampm24(per.end) + ")" : (TESTCLASS ? "Class time (test page)" : "Outside class time"); if (ps.textContent !== t) ps.textContent = t; }
     if (full) {
       var mo = document.getElementById("ssMore");
       if (mo) { var T = todayStats(), q = qStats(T.qlog); mo.innerHTML = 'Total active today: <b>' + fmt(T.sec) + '</b><br>' + T.right + ' right &middot; ' + T.wrong + ' wrong' + (T.qn ? '<br>Avg. Question Time: <b>' + fmtDur(T.qsec / T.qn) + '</b>' : "") + (q ? '<br>Median question: <b>' + fmtDur(q.med) + '</b> &middot; Longest: <b>' + fmtDur(q.max) + '</b><br>Quick (under 2 s): ' + q.quick + ' &middot; Stalled (over 2 min): ' + q.stall : "") + (T.rapid >= 3 ? '<br><span class="ss-warn2">Rapid answers (under 1.2 s): ' + T.rapid + '</span>' : ""); }

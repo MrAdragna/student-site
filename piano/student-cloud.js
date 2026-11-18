@@ -1,4 +1,4 @@
-/* student-cloud.js (X103, c13, 17 Nov 2026). OPTIONAL cloud link, loaded after student-ui.js. Does NOTHING unless the published settings contain cloud.url.
+/* student-cloud.js (X104, c13, 17 Nov 2026). OPTIONAL cloud link, loaded after student-ui.js. Does NOTHING unless the published settings contain cloud.url.
    - Only during class: every ~45 s (random +/- 5 s) one small status ping (random device code, state, game, right / wrong, active seconds). NO name unless
      cfg.cloud.names is true AND the service allows it. Outside class: no network at all.
    - Auto offline mode: a ping that fails or takes longer than 3 s marks this Chromebook "offline" (the site works exactly as before, everything stays on the device);
@@ -39,6 +39,7 @@
     call("/api/config").then(function(r){
       if (!r || !r.config) return;
       ls("livecfg", JSON.stringify({ version: r.v, config: r.config })); ls("cloudver", String(r.v));
+      try { window.dispatchEvent(new CustomEvent("ss-livecfg", { detail: r.config })); } catch (e) {}   // X104: lets the page react at once (pause)
       var have = window.STUDENT_CONFIG && window.STUDENT_CONFIG.builtAt || "";
       if (String(r.config.builtAt || "") > String(have)) reloadWhenIdle();   // only reload when the pushed copy is really newer than what this page is showing
     }, function(){});

@@ -1149,7 +1149,7 @@
     var o = c.createOscillator(), o2 = null, g = c.createGain(), t = c.currentTime;
     o.type = kind === "piano" ? "triangle" : kind === "mellow" ? "sine" : "square"; o.frequency.value = freq;
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.006);
-    if (kind === "mellow") { g.gain.exponentialRampToValueAtTime(vol * 0.3, t + 0.5); o2 = c.createOscillator(); o2.type = "sine"; o2.frequency.value = freq * 3; var g3 = c.createGain(); g3.gain.setValueAtTime(0.15, t); g3.gain.exponentialRampToValueAtTime(0.001, t + 0.25); o2.connect(g3); g3.connect(g); o2.start(t); }
+    if (kind === "mellow") { g.gain.exponentialRampToValueAtTime(vol * 0.55, t + 0.5); o2 = c.createOscillator(); o2.type = "sine"; o2.frequency.value = freq * 3; var g3 = c.createGain(); g3.gain.setValueAtTime(0.15, t); g3.gain.exponentialRampToValueAtTime(0.001, t + 0.25); o2.connect(g3); g3.connect(g); o2.start(t); }
     if (kind === "piano") { g.gain.exponentialRampToValueAtTime(vol * 0.35, t + 1.6); o2 = c.createOscillator(); o2.type = "sine"; o2.frequency.value = freq * 2; var g2 = c.createGain(); g2.gain.value = 0.22; o2.connect(g2); g2.connect(g); o2.start(t); }
     o.connect(g); g.connect(c.destination); o.start(t);
     tones[id] = { o: o, o2: o2, g: g };
@@ -1169,7 +1169,7 @@
     ".ssg-main { flex: 1; min-width: 0; overflow-y: auto; padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; }" +
     ".ssg-btn { font: inherit; font-weight: 700; border: 2px solid #3a2f8f; background: #fff; color: #3a2f8f; border-radius: 10px; padding: 6px 14px; cursor: pointer; border-bottom-width: 4px; } .ssg-btn.primary { background: #3a2f8f; color: #fff; } .ssg-btn.sm { padding: 1px 8px; border-bottom-width: 2px; } .ssg-btn:disabled { opacity: .45; cursor: default; }" +
     ".ssg-item { text-align: left; font: inherit; font-weight: 700; font-size: 14px; border: 2px solid #ddd; background: #fff; border-radius: 10px; padding: 6px 9px; cursor: pointer; color: #2a2170; } .ssg-item.on { border-color: #3a2f8f; background: #f4f2ff; } .ssg-item small { display: block; font-weight: 600; color: #777; } .ssg-item .ok { color: #1a8a4a; }" +
-    ".ssg-staff { border: 2px solid #eee; border-radius: 12px; padding: 4px 8px; background: #fff; position: relative; } .ssg-staff svg { display: block; width: 100%; height: auto; max-height: 300px; }" +
+    ".ssg-staff { border: 2px solid #eee; border-radius: 12px; padding: 4px 8px; background: #fff; position: relative; } .ssg-staff svg { display: block; width: 100%; height: auto; max-height: 460px; }" +
     ".ssg-count { min-height: 54px; display: flex; gap: 14px; align-items: center; justify-content: center; font-size: 40px; font-weight: 800; color: #bbb; } .ssg-count span.on { color: #3a2f8f; transform: scale(1.25); } .ssg-count span { transition: transform .08s; } .ssg-count small { font-size: 15px; color: #777; font-weight: 700; }" +
     ".ssg-lane { position: relative; height: 112px; border: 2px solid #eee; border-radius: 12px; background: #fafafa; overflow: hidden; } .ssg-lane .cin { position: absolute; top: 0; bottom: 0; background: #eceaff; } .ssg-lane .bl { position: absolute; top: 0; bottom: 0; width: 1px; background: #e2e2e2; } .ssg-lane .ml { background: #bbb; width: 2px; }" +
     ".ssg-lane .ex { position: absolute; top: 10px; height: 34px; border: 2px solid #8a85c0; background: #fff; border-radius: 6px; box-sizing: border-box; font-size: 11px; font-weight: 800; text-align: center; line-height: 30px; overflow: hidden; white-space: nowrap; } .ssg-lane .ex.rest { top: 20px; height: 14px; border: 1px dashed #ccc; background: none; }" +
@@ -1179,7 +1179,7 @@
     ".ssg-msg { font-size: 17px; font-weight: 700; min-height: 26px; } .ssg-msg .big { font-size: 28px; } .ssg-msg .okc { color: #1a8a4a; } .ssg-msg .no { color: #c0392b; } .ssg-sub { font-size: 14px; color: #555; font-weight: 600; line-height: 1.5; }" +
     ".ssg-pad { border: 3px dashed #3a2f8f; border-radius: 14px; padding: 14px; text-align: center; font-weight: 800; color: #3a2f8f; background: #f4f2ff; cursor: pointer; user-select: none; touch-action: none; } .ssg-pad.down { background: #3a2f8f; color: #fff; }" +
     "#rStart, #rAgain { display: none !important; } .ssg-btn[disabled] { opacity: .35; cursor: not-allowed; } .ssg-lane .nowbox { position: absolute; left: 10px; right: 10px; top: 16px; height: 64px; border: 3px solid #cfcbe8; background: #fff; border-radius: 12px; font-weight: 800; font-size: 20px; text-align: center; line-height: 58px; color: #b9b5d8; transition: background .06s; } .ssg-lane .nowbox.on { background: #3a7bd5; border-color: #2a5aa8; color: #fff; } .nocount { margin-top: 8px; padding: 10px 14px; border-radius: 12px; background: #fff0c7; border: 3px solid #e9a31a; font-size: 20px; font-weight: 800; color: #8a4b00; } .ssg-btns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }" +
-    ".ssg-kb { position: relative; height: 170px; user-select: none; touch-action: none; margin-top: auto; flex: none; } .ssg-kb .wk { position: absolute; top: 0; bottom: 0; border: 1px solid #555; background: #fff; border-radius: 0 0 6px 6px; box-sizing: border-box; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; font-size: 12px; font-weight: 800; color: #3a2f8f; } .ssg-kb .bk { position: absolute; top: 0; height: 62%; background: #222; border-radius: 0 0 5px 5px; z-index: 2; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 5px; font-size: 11px; font-weight: 800; color: #fff; box-sizing: border-box; } .ssg-kb .wk.down { background: #cfe3ff; } .ssg-kb .bk.down { background: #3a7bd5; } .ssg-kb .c4 { background: #f7f4ff; }" +
+    ".ssg-kb { position: relative; height: 170px; user-select: none; touch-action: none; margin-top: auto; flex: none; } .ssg-kb .wk { position: absolute; top: 0; bottom: 0; border: 1px solid #555; background: #fff; border-radius: 0 0 6px 6px; box-sizing: border-box; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; font-size: 12px; font-weight: 800; color: #3a2f8f; } .ssg-kb .bk { position: absolute; top: 0; height: 62%; background: #222; border-radius: 0 0 5px 5px; z-index: 2; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 5px; font-size: 11px; font-weight: 800; color: #fff; box-sizing: border-box; } .ssg-kb .wk.down { background: #cfe3ff; } .ssg-kb .bk.down { background: #3a7bd5; } .ssg-kb .c4 { background: #f7f4ff; } .ssg-kb .wk .nm { position: absolute; top: 5px; left: 0; right: 0; text-align: center; font-size: 11px; font-style: normal; text-decoration: none; color: #9a9ab0; font-weight: 700; } .ssg-kb .wk.c3 .nm, .ssg-kb .wk.c4 .nm, .ssg-kb .wk.c5 .nm, .ssg-kb .wk.c2 .nm, .ssg-kb .wk.c6 .nm { color: #3a2f8f; }" +
     ".ssg-count span { display: inline-block; min-width: 84px; text-align: center; padding: 4px 10px 6px; border-radius: 14px; border: 2px solid transparent; } .ssg-count span.on { background: #3a2f8f; color: #fff; border-color: #3a2f8f; transform: none; } .ssg-count span.on small { color: #d9d4ff; } .ssg-dots { display: inline-flex; gap: 3px; vertical-align: middle; } .ssg-dots i { width: 10px; height: 10px; border-radius: 50%; background: #ddd; display: inline-block; } .ssg-dots i.y { background: #1a8a4a; } .ssg-dots i.n { background: #c0392b; } .ssg-dots i.o { background: #e9b320; } .bdg { display: inline-block; font-size: 10px; font-weight: 800; border-radius: 8px; padding: 0 6px; margin-right: 3px; text-transform: uppercase; } .bdg.late { background: #fbdcd8; color: #a3281a; } .bdg.now { background: #d9f3e3; color: #14683a; } .ssg-item.lk { opacity: .5; } .nocount { margin-top: 4px; font-size: 14px; font-weight: 700; color: #a35a00; } .ssg-ver { font-size: 11px; color: #999; font-weight: 600; } " +
     ".ssg-grp { font-size: 12px; font-weight: 800; color: #6b64a8; text-transform: uppercase; letter-spacing: .04em; margin: 8px 2px 0; } .ssg-item[disabled] { opacity: .45; cursor: not-allowed; } [data-ssg].on { outline: 3px solid #3a2f8f; }" +
     "@media (max-width: 900px) { .ssg-side { width: 150px; } }";
@@ -1259,28 +1259,24 @@
   function rResults(){ return jget("rhythm-results", {}); }
   function cleared(lv){ var r = rResults()[lv.id], j = J(); if (!r || !r.h2) return false; var h = r.h2.slice(-j.of); if (h.length < j.of) return false; var g = 0; for (var k = 0; k < h.length; k++) { if (h[k] === 0) return false; if (h[k] === 2) g++; } return g >= j.need && h[h.length - 1] === 2; }   // like RhythmRandomizer: no reds, enough greens (default 4 of the last 5), the newest one green
   function isTeacher(){ return !!(PREVIEWISH || (window.ssIsTester && window.ssIsTester())); }
-  function allowedLevel(i){ if (i <= 1 || isTeacher()) return true; for (var k = 0; k < i; k++) if (!cleared(levels[k])) return false; return true; }   // levels 1 and 2 are always open; a level opens when every level before it is cleared (teacher test computers see all)
+  function allowedLevel(i){ if (i <= 1 || (isTeacher() && lg("rhythm-openall") === "1")) return true; for (var k = 0; k < i; k++) if (!cleared(levels[k])) return false; return true; }   // levels 1 and 2 are always open; a level opens when every level before it is cleared (teacher test computers see all)
   var NAMES_SIMPLE = { 4: ["1", "2", "3", "4"], 3: ["1", "2", "3"] }, NAMES_68 = ["1", "+", "a", "2", "+", "a"];
   function tickMsOf(T, bpm){ return 60000 / (bpm * T.beat); }
 
   function openRhythm(){
     if (!window.VexFlow) { alert("The music drawing code did not load. Reload the page."); return; }
     if (!levels.length) loadLevels();
-    var body = openHost("rhythm", "Rhythm", '<span class="ssg-ver">games X114</span>' + '<label title="A thin line on the music that follows the beat. Turn it off to prove you know the rhythm: a level only counts as cleared with this off"><input type="checkbox" id="rFollow" checked> Follower line (help)</label>' +
-      '<span class="ctl">Tempo <button type="button" class="ssg-btn sm" id="rSlow">&minus;</button><b id="rTempo"></b><button type="button" class="ssg-btn sm" id="rFast">+</button></span>' +
-      '<span class="ctl" id="rTeach" style="display:none" title="Teacher only. The timing adjusts by itself from each try; this shows it.">Teacher: timing <button type="button" class="ssg-btn sm" id="rSyncM">&minus;</button><b id="rSync"></b> ms <button type="button" class="ssg-btn sm" id="rSyncP">+</button> <button type="button" class="ssg-btn sm" id="rResetLv" title="Forget every level\'s tries on this computer">Reset all levels</button> <button type="button" class="ssg-btn sm" id="rResetOne" title="Forget the tries of this level">Reset this level</button> <button type="button" class="ssg-btn sm" id="rClearOne" title="Count this level as cleared">Clear this level</button></span>');
+    var body = openHost("rhythm", "Rhythm", '<span class="ssg-ver">games X115</span>' + '<span class="ctl">Tempo <button type="button" class="ssg-btn sm" id="rSlow">&minus;</button><b id="rTempo"></b><button type="button" class="ssg-btn sm" id="rFast">+</button></span>' +
+      '<span class="ctl" id="rTeach" style="display:none" title="Teacher only">Teacher: <label><input type="checkbox" id="rOpenAll"> open every level</label> <button type="button" class="ssg-btn sm" id="rResetLv" title="Forget every level\'s tries on this computer">Reset all levels</button> <button type="button" class="ssg-btn sm" id="rResetOne" title="Forget the tries of this level">Reset this level</button> <button type="button" class="ssg-btn sm" id="rClearOne" title="Count this level as cleared">Clear this level</button></span>');
     body.innerHTML = '<div class="ssg-side" id="rLevels"></div><div class="ssg-main"><div class="ssg-sub" id="rTitle"></div><div class="ssg-count" id="rCount"></div><div class="ssg-staff" id="rStaff"></div><div class="ssg-lane" id="rLane"></div>' +
       '<div class="ssg-msg" id="rMsg"></div><div class="ssg-sub" id="rDet"></div><div class="ssg-btns"><button type="button" class="ssg-btn primary" id="rStart">Start</button><button type="button" class="ssg-btn" id="rAgain" style="display:none">Try again</button><button type="button" class="ssg-btn" id="rStop" disabled>Backspace to stop</button><button type="button" class="ssg-btn" id="rNew">N for new rhythm</button><button type="button" class="ssg-btn" id="rNext" style="display:none">Next level</button></div>' +
-      '<div class="ssg-pad" id="rPad">Click here or press any key</div></div></div>';
+      '<div class="ssg-pad" id="rPad">Click here or press any key to start</div></div></div>';
     var last = Number(lg("rhythm-level") || 0); if (!(last >= 0 && last < levels.length) || !allowedLevel(last)) last = 0;
-    R = { lv: last, tempo: 0, phase: "ready", taps: [], sync: Number(lg("rhythm-sync") || 0) || 0, click: true, follow: true, held: {}, ex: null };
+    R = { lv: last, tempo: 0, phase: "ready", taps: [], sync: 0, click: true, follow: false, held: {}, ex: null };
     var h = host;
     function $(id){ return h.querySelector("#" + id); }
-    $("rFollow").onchange = function(){ R.follow = this.checked; ls("rhythm-follow-" + levels[R.lv].id, this.checked ? "1" : "0"); };
     $("rSlow").onclick = function(){ R.tempo = Math.max(36, R.tempo - 4); $("rTempo").textContent = R.tempo; if (R.phase === "ready" || R.phase === "done") { R.phase = "ready"; showReady(); } };
     $("rFast").onclick = function(){ R.tempo = Math.min(140, R.tempo + 4); $("rTempo").textContent = R.tempo; if (R.phase === "ready" || R.phase === "done") { R.phase = "ready"; showReady(); } };
-    function sy(d){ R.sync = Math.max(-300, Math.min(300, R.sync + d)); ls("rhythm-sync", String(R.sync)); $("rSync").textContent = (R.sync > 0 ? "+" : "") + R.sync; }
-    $("rSyncM").onclick = function(){ sy(-10); }; $("rSyncP").onclick = function(){ sy(10); }; sy(0);
     $("rStart").onclick = function(){ startRun(); this.blur(); };
     $("rAgain").onclick = function(){ tryAgain(); this.blur(); };
     $("rNew").onclick = function(){ if (R.lv > 0) newExercise(); this.blur(); };
@@ -1295,8 +1291,8 @@
       var k = ev.key;
       if (ev.metaKey || ev.ctrlKey || ev.altKey || k === "Shift" || k === "Control" || k === "Alt" || k === "Meta" || k === "Tab" || /^F\d+$/.test(k) || k === "CapsLock") return;
       if (ev.target && /^(INPUT|TEXTAREA|SELECT)$/.test(ev.target.tagName) && k !== " ") return;
-      if (k === "Escape") return;   // Escape leaves full screen: it is not a rhythm key
       ev.preventDefault(); ev.stopPropagation();
+      if (k === "Escape") { if (R.phase === "count" || R.phase === "run") failRun("You pressed Escape."); return; }   // X115: Escape (it also leaves full screen) fails the try
       if (k === "Backspace") { if (R.phase === "count" || R.phase === "run") abortRun(); return; }
       if (k === "n" || k === "N") { if (!ev.repeat && (R.phase === "ready" || R.phase === "done") && R.lv > 0) newExercise(); return; }
       if (ev.repeat) return;
@@ -1308,8 +1304,8 @@
     var ku = function(ev){ if (!host || host.getAttribute("data-game") !== "rhythm") return; ev.preventDefault(); ev.stopPropagation(); tapUp(ev.code || ev.key, ev.timeStamp > 0 ? ev.timeStamp : performance.now()); };
     window.addEventListener("keydown", kd, true); window.addEventListener("keyup", ku, true);
     cleanup = function(){ window.removeEventListener("keydown", kd, true); window.removeEventListener("keyup", ku, true); cancelAnimationFrame(raf); R = null; };
-    if (isTeacher()) { h.querySelector("#rTeach").style.display = ""; h.querySelector("#rResetLv").onclick = function(){ ls("rhythm-results", "{}"); drawLevels(); }; h.querySelector("#rResetOne").onclick = function(){ var rs = rResults(); delete rs[levels[R.lv].id]; ls("rhythm-results", JSON.stringify(rs)); drawLevels(); }; h.querySelector("#rClearOne").onclick = function(){ var rs = rResults(), id = levels[R.lv].id, r = rs[id] || (rs[id] = { tries: 0, passes: 0, best: null }); r.h2 = [2, 2, 2, 2, 2]; ls("rhythm-results", JSON.stringify(rs)); drawLevels(); }; }
-    var fsw = function(){ if (R && R.fs && !document.fullscreenElement && (R.phase === "count" || R.phase === "run")) abortRun(true); };
+    if (isTeacher()) { h.querySelector("#rTeach").style.display = ""; var oa = h.querySelector("#rOpenAll"); oa.checked = lg("rhythm-openall") === "1"; oa.onchange = function(){ ls("rhythm-openall", this.checked ? "1" : "0"); drawLevels(); }; h.querySelector("#rResetLv").onclick = function(){ ls("rhythm-results", "{}"); drawLevels(); }; h.querySelector("#rResetOne").onclick = function(){ var rs = rResults(); delete rs[levels[R.lv].id]; ls("rhythm-results", JSON.stringify(rs)); drawLevels(); }; h.querySelector("#rClearOne").onclick = function(){ var rs = rResults(), id = levels[R.lv].id, r = rs[id] || (rs[id] = { tries: 0, passes: 0, best: null }); r.h2 = [2, 2, 2, 2, 2]; ls("rhythm-results", JSON.stringify(rs)); drawLevels(); }; }
+    var fsw = function(){ if (R && R.fs && !document.fullscreenElement && (R.phase === "count" || R.phase === "run")) failRun("You left full screen."); };
     document.addEventListener("fullscreenchange", fsw);
     var cl0 = cleanup; cleanup = function(){ document.removeEventListener("fullscreenchange", fsw); if (cl0) cl0(); };
     drawLevels(); setLevel(last, true);
@@ -1325,7 +1321,7 @@
     [].forEach.call(el.querySelectorAll("[data-i]"), function(b){ b.onclick = function(){ if (b.disabled) return; if (R.phase === "count" || R.phase === "run") abortRun(); setLevel(+b.getAttribute("data-i")); }; });
   }
   function setLevel(i, first){
-    R.lv = i; ls("rhythm-level", String(i)); R.follow = lg("rhythm-follow-" + levels[i].id) !== "0"; try { host.querySelector("#rFollow").checked = R.follow; } catch (e) {} R.tempo = levels[i].tempo || 72;
+    R.lv = i; ls("rhythm-level", String(i)); R.follow = false; R.tempo = levels[i].tempo || 72;
     host.querySelector("#rTempo").textContent = R.tempo;
     if (!first) drawLevels(); else drawLevels();
     newExercise();
@@ -1343,7 +1339,7 @@
   }
   function showReady(){
     var h = host; if (!h || !R || !R.ex) return;
-    R.tickMs = tickMsOf(R.ex.ts, R.tempo); R.reveal = false;
+    R.tickMs = tickMsOf(R.ex.ts, R.tempo); R.reveal = false; R.score = null;
     drawLane(); drawCount(-1);
     h.querySelector("#rMsg").innerHTML = R.tries ? "" : "Get ready: you hear one measure of counting, then play the rhythm.";
     h.querySelector("#rDet").textContent = ""; h.querySelector("#rStart").style.display = ""; h.querySelector("#rAgain").style.display = "none"; h.querySelector("#rNext").style.display = "none";
@@ -1364,7 +1360,7 @@
     var weights = ex.measures.map(wt), rows = [], cur = [];
     ex.measures.forEach(function(ms, i){ if (cur.length >= maxPerRow) { rows.push(cur); cur = []; } cur.push(i); });
     if (cur.length) rows.push(cur);
-    var rowH = 120, topPad = 40, layout = [], maxRowW = 0;
+    var rowH = R.reveal ? 175 : 120, topPad = 40, layout = [], maxRowW = 0;
     rows.forEach(function(row, r){
       var extra = clefW + (r === 0 ? tsW : 0), sumW = row.reduce(function(a, i){ return a + weights[i]; }, 0), rowW = Math.min(rowAvail, sumW * 1.5 + extra), x = 20;
       row.forEach(function(i, k){ var w = (weights[i] / sumW) * (rowW - extra) + (k === 0 ? extra : 0); layout[i] = { row: r, x: x, w: w, first: k === 0 }; x += w; });
@@ -1413,7 +1409,43 @@
       return { x: r.cx + (endX - r.cx) * f, y: r.y };
     }
     var ns = "http://www.w3.org/2000/svg", ph = document.createElementNS(ns, "line"); ph.setAttribute("class", "ssgph"); ph.setAttribute("stroke", "#e9a31a"); ph.setAttribute("stroke-width", "4"); ph.setAttribute("stroke-linecap", "round"); ph.setAttribute("visibility", "hidden"); svg.appendChild(ph);
-    R.geo = { posAt: posAt, ph: ph, total: T.ticks * ex.measures.length };
+    R.geo = { posAt: posAt, ph: ph, total: T.ticks * ex.measures.length, layout: layout, mEnd: mEnd, rowH: rowH, topPad: topPad, svg: svg, ns: ns, W: W };
+    if (R.reveal && R.score) drawUnder();
+  }
+
+  // ---- X115: after a try, "what you should have played" boxes and "what you played" bars sit directly under the written notes, lined up with them
+  function segs(a0, a1){   // a tick range -> pieces (one per measure it touches) with x0, x1 and the row's y
+    var G = R.geo, T = R.ex.ts, out = [], total = G.total; a0 = Math.max(0, a0); a1 = Math.min(total, a1); if (a1 <= a0) return out;
+    for (var m = Math.floor(a0 / T.ticks); m * T.ticks < a1 && m < R.ex.measures.length; m++) {
+      var lo = Math.max(a0, m * T.ticks), hi = Math.min(a1, (m + 1) * T.ticks), y = G.topPad + G.layout[m].row * G.rowH;
+      var x0 = G.posAt(lo).x, x1 = hi >= (m + 1) * T.ticks ? G.mEnd[m] - 4 : G.posAt(hi).x;
+      out.push({ x0: x0, x1: Math.max(x0 + 3, x1), y: y });
+    }
+    return out;
+  }
+  function svgEl(name, at, parent){ var e = document.createElementNS(R.geo.ns, name); Object.keys(at).forEach(function(k){ e.setAttribute(k, at[k]); }); (parent || R.geo.svg).appendChild(e); return e; }
+  function drawUnder(){
+    var S = R.score, E = R.E, T = R.ex.ts, teacher = isTeacher();
+    var FILL = { good: "#d9f3e3", close: "#fff1c7", miss: "#fbdcd8" }, EDGE = { good: "#1a8a4a", close: "#d89a00", miss: "#c0392b" };
+    E.rests.forEach(function(rs){ var bad = R.restColors && R.restColors[rs.abs] === "#c0392b"; segs(rs.abs, rs.abs + rs.ticks).forEach(function(g){ svgEl("rect", { x: g.x0, y: g.y + 96, width: g.x1 - g.x0, height: 26, rx: 5, fill: bad ? "#fbdcd8" : "#f3f3f3", stroke: bad ? "#c0392b" : "#cfcfcf", "stroke-dasharray": "4 3", "stroke-width": 1.5 }); }); });
+    S.res.forEach(function(r){
+      var e = E.evs[r.i], words = r.onset === "miss" ? ["missed"] : r.onset === "off" ? [r.dt < 0 ? "way too early" : "way too late"] : [r.onset === "close" ? (r.dt < 0 ? "early start" : "late start") : "", r.hold === "short" ? "let go early" : r.hold === "long" ? "held long" : ""].filter(Boolean);
+      var full = teacher && r.dt != null ? "start " + (r.dt > 0 ? "+" : "") + r.dt + " end " + (r.de > 0 ? "+" : "") + r.de : (words.length ? words.join(", ") : "\u2713");
+      var title = "Start: " + (r.dt == null ? "missed" : (r.dt > 0 ? r.dt + " ms late" : (-r.dt) + " ms early")) + (r.hold === "na" ? "" : "; end: " + (r.hold === "good" ? "good" : r.hold === "short" ? "you let go too early" : "you held too long"));
+      segs(e.abs, e.abs + e.ticks).forEach(function(g, gi){
+        var w = g.x1 - g.x0, k = r.k;
+        svgEl("rect", { x: g.x0, y: g.y + 96, width: w, height: 26, rx: 5, fill: FILL[k], stroke: EDGE[k], "stroke-width": 2 }).appendChild(document.createElementNS(R.geo.ns, "title")).textContent = title;
+        if (gi > 0) return;
+        var txt = full; if (txt.length * 5.6 > w - 6) txt = words.length ? words[0] : "\u2713"; if (txt.length * 5.6 > w - 6) txt = k === "good" ? "\u2713" : k === "miss" && r.dt == null ? "\u2717" : (r.dt < 0 ? "\u25c0" : "\u25b6");
+        var t = svgEl("text", { x: g.x0 + w / 2, y: g.y + 113, "text-anchor": "middle", "font-size": 11, "font-weight": 800, fill: EDGE[k], "pointer-events": "none" }); t.textContent = txt;
+      });
+    });
+    R.taps.forEach(function(tp){
+      var t0 = (tp.down - R.w0) / R.tickMs, t1 = ((tp.up == null ? tp.down + 80 : tp.up) - R.w0) / R.tickMs;
+      segs(t0, Math.max(t1, t0 + 0.12)).forEach(function(g){ svgEl("rect", { x: g.x0, y: g.y + 128, width: Math.max(5, g.x1 - g.x0), height: 22, rx: 5, fill: tp.extra ? "#c0392b" : "#3a7bd5", opacity: .88 }); });
+    });
+    var lg2 = svgEl("text", { x: 6, y: R.geo.topPad + 92, "font-size": 10, fill: "#777" }); lg2.textContent = "should play";
+    var lg3 = svgEl("text", { x: 6, y: R.geo.topPad + 143, "font-size": 10, fill: "#777" }); lg3.textContent = "you played";
   }
 
   // ---- the lane under the staff: what you should play (boxes) and what you played (blue bars) ----
@@ -1432,12 +1464,9 @@
   }
   function drawLane(){
     var lane = host.querySelector("#rLane"), T = R.ex.ts, s = laneSpan(), E = expectedEvents(); R.E = E;
-    var h = R.reveal ? '<div class="cin" style="left:0;width:' + lx(0) + '%"></div>' : "";
-    if (R.reveal) for (var t = s.min; t <= s.max; t += T.beat) h += '<div class="bl' + ((t % T.ticks === 0) ? " ml" : "") + '" style="left:' + lx(t) + '%"></div>';
+    var h = "";
     if (!R.reveal) h += '<div class="nowbox" id="rNow">playing</div>';
-    if (R.reveal) E.rests.forEach(function(r){ h += '<div class="ex rest" style="left:' + lx(r.abs) + '%;width:' + (r.ticks / (s.max - s.min) * 100) + '%"></div>'; });
-    if (R.reveal) E.evs.forEach(function(e, i){ h += '<div class="ex" id="rEx' + i + '" style="left:' + lx(e.abs) + '%;width:' + (e.ticks / (s.max - s.min) * 100) + '%"></div>'; });
-    if (R.reveal) h += '<div class="lab" style="left:' + lx(-T.ticks / 2) + '%">count-in</div>';
+    lane.style.display = R.reveal ? "none" : "";
     lane.innerHTML = h; lane.querySelectorAll(".ex:not(.rest)");
   }
 
@@ -1446,7 +1475,7 @@
     if (!R || !R.ex || R.phase === "count" || R.phase === "run") return;
     if (R.needNew && R.lv > 0) { R.needNew = false; newExercise(); } else R.needNew = false;   // you got the last one: a fresh rhythm
     var c = audio(); if (!c) { host.querySelector("#rMsg").textContent = "This computer cannot play sound here."; return; }
-    var T = R.ex.ts; R.tickMs = tickMsOf(T, R.tempo); R.taps = []; R.held = {}; R.tries++; R.reveal = false; R.fs = !!document.fullscreenElement; R.followUsed = !!R.follow; R.colors = null; R.restColors = null;
+    var T = R.ex.ts; R.tickMs = tickMsOf(T, R.tempo); R.taps = []; R.held = {}; R.tries++; R.reveal = false; R.score = null; R.fs = !!document.fullscreenElement; R.followUsed = false; R.colors = null; R.restColors = null;
     if (R.hadResult) { drawStaff(); R.hadResult = false; }
     drawLane();
     var a0 = c.currentTime + 0.25, perfA0;
@@ -1470,9 +1499,6 @@
     var cstep = T.compound ? 2 : 4;
     if (tick < 0) { var ci = -1, el0 = tick + T.ticks; R.tokens.forEach(function(t, k){ if (el0 >= t.tick) ci = k; }); if (ci !== R.lastCount && ci >= 0) { R.lastCount = ci; drawCount(ci); } }
     else if (R.lastCount !== -1) { R.lastCount = -1; drawCount(-1); }
-    if (R.follow) R.followUsed = true;
-    if (!R.follow || tick < 0 || tick > R.geo.total) R.geo.ph.setAttribute("visibility", "hidden");
-    if (R.follow && tick >= 0 && tick <= R.geo.total) { var p = R.geo.posAt(tick); R.geo.ph.setAttribute("x1", p.x); R.geo.ph.setAttribute("x2", p.x); R.geo.ph.setAttribute("y1", p.y + 2); R.geo.ph.setAttribute("y2", p.y + 66); R.geo.ph.setAttribute("visibility", "visible"); }
     if (tick >= R.endTick) { finishRun(); return; }
     raf = requestAnimationFrame(frame);
   }
@@ -1480,7 +1506,7 @@
     if (!R || (R.phase !== "count" && R.phase !== "run")) return;
     if (R.held[code]) return;
     var T = R.ex.ts, tick = (t - R.w0) / R.tickMs, tp = { down: t, up: null, code: code, tick: tick };
-    toneOn("r:" + code, 261.63, 0.16, "mellow");
+    toneOn("r:" + code, 261.63, 0.5, "mellow");
     R.held[code] = tp; var nb = host.querySelector("#rNow"); if (nb) nb.classList.add("on");
     if (R.phase === "run" || tick > -T.beat * 0.5) R.taps.push(tp); else { tp.count = true; }
   }
@@ -1496,6 +1522,16 @@
     if (!noScore && R.phase === "run" && R.taps.length) { finishRun(); return; }
     R.phase = "ready"; R.held = {}; var h = host; if (h) { showReady(); h.querySelector("#rMsg").textContent = noScore ? "The try ended because the screen left full screen." : "Stopped."; setBtns(); }
   }
+  function failRun(why){   // X115: leaving full screen / Escape: the try is over, it counts as failed, and this rhythm is not offered again (a new one comes next)
+    if (!R || (R.phase !== "count" && R.phase !== "run")) return;
+    cancelAnimationFrame(raf); toneAll(); stopSched(); R.held = {};
+    var lv = levels[R.lv], res = rResults(), r = res[lv.id] || (res[lv.id] = { tries: 0, passes: 0, best: null });
+    r.tries++; r.h2 = (r.h2 || []).concat(0).slice(-20); if (r.best == null) r.best = 0; ls("rhythm-results", JSON.stringify(res));
+    evt("ss-attempt", { title: "Rhythm: " + lv.name, mode: "practice", ok: false });
+    R.phase = "ready"; R.needNew = R.lv > 0; R.tries = 1; R.colors = null; R.restColors = null;
+    drawLane(); drawCount(-1); var h = host; h.querySelector("#rMsg").innerHTML = '<span class="big no">Try failed.</span> ' + esc(why) + (R.lv > 0 ? " You get a new rhythm next." : ""); h.querySelector("#rDet").textContent = "";
+    var ph = R.geo && R.geo.ph; if (ph) ph.setAttribute("visibility", "hidden"); setBtns(); drawLevels();
+  }
   function tryAgain(){ if (!R || !R.ex) return; R.phase = "ready"; startRun(); }
 
   // ---- scoring: key DOWN against the expected note start, key UP against the expected note end ----
@@ -1503,22 +1539,26 @@
     var T = R.ex.ts, E = R.E, tm = R.tickMs, J0 = J(), good = Math.max(J0.startMin, Math.min(J0.startMax, 0.5 * tm)), close = Math.min(260, good * J0.closeMult), used = {}, res = [];
     var taps = R.taps.filter(function(t){ return !t.count; });
     var pts = 0, total = 0, holdN = 0, holdOk = 0, onN = 0, onOk = 0, dts = [];
+    taps.sort(function(a, b){ return a.down - b.down; });
+    var lastJ = -1;
     E.evs.forEach(function(e, i){
-      var exp = R.w0 + e.abs * tm + R.sync, best = -1, bd = 1e9;
-      taps.forEach(function(tp, j){ if (used[j]) return; var d = Math.abs(tp.down - exp); if (d < bd) { bd = d; best = j; } });
+      var exp = R.w0 + e.abs * tm, best = -1, bd = 1e9;
+      var pg = i > 0 ? (e.abs - E.evs[i - 1].abs) * tm : 2 * T.beat * tm, ng = E.evs[i + 1] ? (E.evs[i + 1].abs - e.abs) * tm : 2 * T.beat * tm;
+      var W = Math.max(close, Math.min(650, 0.48 * Math.min(pg, ng)));   // X115: a tap this near is "that note, played early / late", not just "wrong"
+      for (var j = lastJ + 1; j < taps.length; j++) { var d0 = Math.abs(taps[j].down - exp); if (taps[j].down - exp > W) break; if (d0 <= W && d0 < bd) { bd = d0; best = j; } }
       var r = { i: i, onset: "miss", hold: "na", dt: null };
       total += 1; onN++;
-      if (best >= 0 && bd <= close) {
-        used[best] = true; var tp = taps[best], dt = tp.down - exp; r.dt = Math.round(dt); dts.push(dt);
-        if (bd <= good) { r.onset = "good"; pts += 1; onOk++; } else { r.onset = "close"; pts += 0.5; }
+      if (best >= 0) {
+        used[best] = true; lastJ = best; var tp = taps[best], dt = tp.down - exp; r.dt = Math.round(dt); tp.mi = i; dts.push(dt);
         r.de = Math.round((tp.up == null ? (R.w0 + R.endTick * tm) : tp.up) - (exp + e.ticks * tm));
-        if (e.ticks >= J0.holdMin || e.gapNext) {
+        if (bd <= good) { r.onset = "good"; pts += 1; onOk++; } else if (bd <= close) { r.onset = "close"; pts += 0.5; } else r.onset = "off";
+        if (r.onset !== "off" && (e.ticks >= J0.holdMin || e.gapNext)) {
           total += 1; holdN++;
           var up = tp.up == null ? (R.w0 + R.endTick * tm) : tp.up, expEnd = exp + e.ticks * tm, tol = Math.max(J0.holdTolMs, J0.holdTolPct / 100 * e.ticks * tm), dd = up - expEnd, ok2 = Math.abs(dd) <= tol;
-          if (e.gapNext && e.ticks < J0.holdMin) ok2 = (up - exp) >= e.ticks * tm * J0.gapPct / 100 && up <= exp + e.ticks * tm + tol;   // repeated note: let go anywhere between about half the note and the next start
+          if (e.gapNext && e.ticks < J0.holdMin) ok2 = (up - exp) >= e.ticks * tm * J0.gapPct / 100 && up <= exp + e.ticks * tm + tol;
           if (ok2) { r.hold = "good"; pts += 1; holdOk++; } else r.hold = dd < 0 ? "short" : "long";
           r.dh = Math.round(dd);
-        }
+        } else if (e.ticks >= J0.holdMin || e.gapNext) total += 1;
       } else if (e.ticks >= J0.holdMin || e.gapNext) total += 1;
       res.push(r);
     });
@@ -1535,36 +1575,20 @@
     R.colors = {}; R.restColors = {};
     S.res.forEach(function(r){ var e = R.E.evs[r.i], k = r.onset === "good" && (r.hold === "good" || r.hold === "na") ? "good" : r.onset === "miss" ? "miss" : "close"; r.k = k; R.colors[e.abs] = COL[k]; });
     R.E.rests.forEach(function(rs){ var bad = R.taps.some(function(tp){ if (tp.count) return false; var tk = (tp.down - R.w0) / R.tickMs; return tp.extra && tk >= rs.abs - 0.5 && tk < rs.abs + rs.ticks - 0.5; }); R.restColors[rs.abs] = bad ? COL.miss : COL.good; });
-    R.hadResult = true; drawStaff();   // the written notes and rests turn green / yellow / red
-    R.reveal = true; drawLane();   // only now do the boxes (what you should have played) and the bars (what you played) appear
-    var lane = h.querySelector("#rLane");
-    R.taps.forEach(function(tp){ var t0 = (tp.down - R.w0) / R.tickMs, t1 = ((tp.up == null ? tp.down + 80 : tp.up) - R.w0) / R.tickMs, el = document.createElement("div"); el.className = "ac" + (tp.extra ? " extra" : ""); el.style.left = lx(t0) + "%"; el.style.width = Math.max(0.4, lx(t1) - lx(t0)) + "%"; lane.appendChild(el); });
-    S.res.forEach(function(r){
-      var el = h.querySelector("#rEx" + r.i); if (!el) return;
-      el.classList.add(r.k);
-      var words = r.onset === "miss" ? ["missed"] : [r.onset === "close" ? (r.dt < 0 ? "early start" : "late start") : "", r.hold === "short" ? "let go early" : r.hold === "long" ? "held long" : ""].filter(Boolean);
-      el.textContent = teacher && r.dt != null ? "start " + (r.dt > 0 ? "+" : "") + r.dt + " end " + (r.de > 0 ? "+" : "") + r.de : (words.length ? words.join(", ") : "\u2713");
-      el.title = "Start: " + (r.dt == null ? "missed" : (r.dt > 0 ? r.dt + " ms late" : (-r.dt) + " ms early")) + (r.hold === "na" ? "" : "; end: " + (r.hold === "good" ? "good" : r.hold === "short" ? "you let go too early" : "you held too long"));
-    });
+    R.hadResult = true; R.score = S; R.reveal = true; drawLane(); drawStaff();   // the written notes turn green / yellow / red, and the boxes (should play) and bars (you played) sit directly under them
     var pct = Math.round(S.ratio * 100);
-    h.querySelector("#rMsg").innerHTML = S.pass ? '<span class="big okc">Got it! ' + pct + '%</span>' + (R.followUsed ? '<div class="nocount">THIS TRY DID NOT COUNT. The follower line was on. Turn it off (the box at the top) to count toward the next level.</div>' : (cleared(lv) ? ' <b>Level cleared!</b>' : "")) : '<span class="big no">Not yet. ' + pct + '%</span>' + (R.followUsed ? '<div class="nocount">THIS TRY DID NOT COUNT. The follower line was on.</div>' : "");
+    h.querySelector("#rMsg").innerHTML = S.pass ? '<span class="big okc">Got it! ' + pct + '%</span>' + (cleared(lv) ? ' <b>Level cleared!</b>' : "") : '<span class="big no">Not yet. ' + pct + '%</span>';
     var bits = ["Notes started on time: <b>" + S.onOk + " of " + S.onN + "</b>"];
     if (S.holdN) bits.push("Long notes held the right length: <b>" + S.holdOk + " of " + S.holdN + "</b>");
     if (S.extra) bits.push("Extra taps: <b>" + S.extra + "</b>");
-    if (S.matched >= 3 && Math.abs(S.avg) >= 40) bits.push("You tapped about <b>" + Math.abs(S.avg) + " ms " + (S.avg > 0 ? "late" : "early") + "</b> on average" + (Math.abs(S.avg) >= 70 ? " (the Sync buttons at the top can shift the timing if your keyboard is slow)" : ""));
+    if (S.matched >= 3 && Math.abs(S.avg) >= 40) bits.push("You tapped about <b>" + Math.abs(S.avg) + " ms " + (S.avg > 0 ? "late" : "early") + "</b> on average");
     h.querySelector("#rDet").innerHTML = bits.join("<br>");
     var res = rResults(), r = res[lv.id] || (res[lv.id] = { tries: 0, passes: 0, best: null });
-    r.tries++; if (S.pass) r.passes++; if (!R.followUsed) { r.h2 = (r.h2 || []).concat(S.pass ? 2 : (S.ratio >= J().yellow ? 1 : 0)).slice(-20); } if (r.best == null || S.ratio > r.best) r.best = S.ratio; ls("rhythm-results", JSON.stringify(res));
+    r.tries++; if (S.pass) r.passes++; { r.h2 = (r.h2 || []).concat(S.pass ? 2 : (S.ratio >= J().yellow ? 1 : 0)).slice(-20); } if (r.best == null || S.ratio > r.best) r.best = S.ratio; ls("rhythm-results", JSON.stringify(res));
     evt("ss-attempt", { title: "Rhythm: " + lv.name, mode: "practice", ok: S.pass });
     h.querySelector("#rStart").style.display = "none"; h.querySelector("#rAgain").style.display = ""; h.querySelector("#rNext").style.display = (R.lv < levels.length - 1 && allowedLevel(R.lv + 1)) ? "" : "none";
-    if (S.matched >= 3 && Math.abs(S.avg) >= 15) { R.sync = Math.max(-250, Math.min(250, R.sync + Math.round(S.avg * 0.3))); ls("rhythm-sync", String(R.sync)); var sd = h.querySelector("#rSync"); if (sd) sd.textContent = (R.sync > 0 ? "+" : "") + R.sync; }   // timing adjusts by itself
     setBtns();
     drawLevels();
-    if (PREVIEWISH || (window.ssIsTester && window.ssIsTester())) {
-      var mk = document.createElement("div"); mk.className = "ssg-btns"; mk.innerHTML = '<span class="ssg-sub">Teacher: was this fair?</span><button type="button" class="ssg-btn sm" data-mk="1">Count as right</button><button type="button" class="ssg-btn sm" data-mk="0">Count as wrong</button><span class="ssg-sub" id="rMkMsg"></span>';
-      h.querySelector("#rDet").appendChild(mk);
-      [].forEach.call(mk.querySelectorAll("[data-mk]"), function(b){ b.onclick = function(){ var v = +b.getAttribute("data-mk"), rs = rResults(), rr = rs[lv.id]; if (rr && rr.h2 && rr.h2.length && !R.followUsed) { rr.h2[rr.h2.length - 1] = v ? 2 : 0; ls("rhythm-results", JSON.stringify(rs)); drawLevels(); mk.querySelector("#rMkMsg").textContent = "Marked " + (v ? "right" : "wrong") + "."; } else mk.querySelector("#rMkMsg").textContent = "Only tries with the follower line off are recorded."; }; });
-    }
     var ph = h.querySelector("#rPh"); if (ph) ph.style.display = "none"; R.geo.ph.setAttribute("visibility", "hidden"); drawCount(-1);
   }
   window.ssRhythmTest = { score: function(){ return R && R.ex ? score() : null; }, state: function(){ return R; }, levels: function(){ return levels; } };
@@ -1613,7 +1637,8 @@
     };
     var ku = function(ev){ if (!host || host.getAttribute("data-game") !== "songs") return; var m = SG.down[ev.code]; if (m == null) return; ev.preventDefault(); ev.stopPropagation(); delete SG.down[ev.code]; release(m, "k:" + ev.code); };
     window.addEventListener("keydown", kd, true); window.addEventListener("keyup", ku, true);
-    cleanup = function(){ window.removeEventListener("keydown", kd, true); window.removeEventListener("keyup", ku, true); try { if (SG && SG.midi) SG.midi.inputs.forEach(function(i){ i.onmidimessage = null; }); } catch (e) {} SG = null; };
+    var rz = function(){ try { sizeKb(); } catch (e) {} }; window.addEventListener("resize", rz);
+    cleanup = function(){ window.removeEventListener("resize", rz); window.removeEventListener("keydown", kd, true); window.removeEventListener("keyup", ku, true); try { if (SG && SG.midi) SG.midi.inputs.forEach(function(i){ i.onmidimessage = null; }); } catch (e) {} SG = null; };
     // MIDI is off for now (no permission pop-up for students); setupMidi() is kept for later
     var last = Number(lg("songs-last") || 0); if (!(last >= 0 && last < list.length)) last = 0;
     pickSong(list[last], last);
@@ -1647,20 +1672,20 @@
     var lo = 200, hi = 0, allN = (s.ex ? (s.ex.notes || []).concat(s.ex.notesL || []) : s.notes); allN.forEach(function(n){ if (n.rest) return; var m = midiOfKey(Array.isArray(n.k) ? n.k[0] : n.k); if (m != null) { lo = Math.min(lo, m); hi = Math.max(hi, m); } });
     if (lo > hi) { lo = 60; hi = 72; }
     var isBlack = function(m){ return [1, 3, 6, 8, 10].indexOf(((m % 12) + 12) % 12) >= 0; };
-    var kLo = lo - 2, kHi = hi + 2; while (isBlack(kLo)) kLo--; while (isBlack(kHi)) kHi++;   // the song's range plus a small cushion, ending on white keys
-    while (kHi - kLo < 11) { kHi++; while (isBlack(kHi)) kHi++; }
+    var kLo = lo - 4, kHi = hi + 4; while (kLo % 12 !== 0) kLo--; while (kHi % 12 !== 11) kHi++;   // X115: the song's range plus a generous cushion, from a C up to a B, so you can see where each key sits in the pattern of the piano
+    while (kHi - kLo < 23) kHi += 12;
     SG.kbLo = kLo; SG.kbHi = kHi; SG.lo = lo; SG.hi = hi;
-    SG.win = 0;
+    SG.win = 0; (function(){ var wl = []; for (var q = kLo; q <= kHi; q++) if (!isBlack(q)) wl.push(q); var first = 0; for (var z = 0; z < wl.length; z++) if (wl[z] >= lo) { first = z; break; } SG.win = Math.max(0, Math.min(wl.length - 11, first - 1)); })();
     SG.keys = {}; for (var mm = kLo; mm <= kHi; mm++) SG.keys[mm] = true;
-    drawScore(s); drawKeyboard(); markKeys();
+    drawScore(s); drawKeyboard(); markKeys(); setTimeout(function(){ try { sizeKb(); } catch (e) {} }, 60);
   }
   function drawKeyboard(){
     var kb = host.querySelector("#sKb"), whites = [], i, h = "";
     for (var m0 = SG.kbLo; m0 <= SG.kbHi; m0++) if (WHITE_IN_OCT.indexOf(((m0 % 12) + 12) % 12) >= 0) whites.push(m0);
     SG.whites = whites; var n = whites.length, w = 100 / n;
-    whites.forEach(function(m, i){ h += '<div class="wk' + (m % 12 === 0 ? " c" + (Math.floor(m / 12) - 1) : "") + '" data-m="' + m + '" style="left:' + (i * w) + '%;width:' + w + '%"><span></span></div>'; });
+    whites.forEach(function(m, i){ h += '<div class="wk' + (m % 12 === 0 ? " c" + (Math.floor(m / 12) - 1) : "") + '" data-m="' + m + '" style="left:' + (i * w) + '%;width:' + w + '%"><u class="nm">' + "CDEFGAB"[[0, 2, 4, 5, 7, 9, 11].indexOf(((m % 12) + 12) % 12)] + (m % 12 === 0 ? (Math.floor(m / 12) - 1) : "") + '</u><span></span></div>'; });
     whites.forEach(function(m, i){ var off = m % 12; if (BLACK_AFTER[off] != null && i < n - 1 && whites[i + 1] === m + 2) h += '<div class="bk" data-m="' + (m + 1) + '" style="left:' + ((i + 1) * w - w * 0.3) + '%;width:' + (w * 0.6) + '%"><span></span></div>'; });
-    kb.innerHTML = h;
+    kb.innerHTML = h; sizeKb();
     var down = function(ev){ var k = ev.target.closest && ev.target.closest("[data-m]"); if (!k) return; ev.preventDefault(); var m = +k.getAttribute("data-m"), id = "p:" + ev.pointerId; SG.ptr[ev.pointerId] = m; press(m, id); try { kb.setPointerCapture(ev.pointerId); } catch (e) {} };
     var up = function(ev){ var m = SG.ptr[ev.pointerId]; if (m == null) return; delete SG.ptr[ev.pointerId]; release(m, "p:" + ev.pointerId); };
     kb.addEventListener("pointerdown", down); kb.addEventListener("pointerup", up); kb.addEventListener("pointercancel", up);
@@ -1670,20 +1695,27 @@
       if (m !== m0) { release(m0, "p:" + ev.pointerId); SG.ptr[ev.pointerId] = m; press(m, "p:" + ev.pointerId); }
     });
   }
+  function sizeKb(){   // X115: as tall as fits, up to the height of a real piano key (about 6.4 times its width)
+    if (!host) return; var kb = host.querySelector("#sKb"), main = kb && kb.parentNode; if (!kb || !main || !SG || !SG.whites) return;
+    var kw = kb.clientWidth / Math.max(1, SG.whites.length), ideal = Math.round(kw * 6.4), used = 0;
+    [].forEach.call(main.children, function(c){ if (c !== kb) used += c.offsetHeight + 8; });
+    var avail = main.clientHeight - used - 12; kb.style.height = Math.max(150, Math.min(ideal, avail)) + "px";
+  }
   function markKeys(){   // the letters that play each key right now
     if (!host) return; var kb = host.querySelector("#sKb"); if (!kb) return;
     [].forEach.call(kb.querySelectorAll("[data-m] > span"), function(s){ s.textContent = ""; });
     SG.map = {}; var W = SG.whites, k;
     for (k = 0; k < 11; k++) { var wm = W[SG.win + k]; if (wm == null) break; var lab = kb.querySelector('[data-m="' + wm + '"] > span'); SG.map[WH_CODES[k]] = wm; if (lab) lab.textContent = WH_LAB[k];
       var nx = W[SG.win + k + 1]; if (k < 10 && nx === wm + 2) { var bm = wm + 1; SG.map[BL_CODES[k]] = bm; var bl = kb.querySelector('[data-m="' + bm + '"] > span'); if (bl) bl.textContent = BL_LAB[k]; } }
-    var hp = host.querySelector("#sHelp2"); if (hp) hp.textContent = W.length > 11 ? "This song is wider than the keys: press the left and right arrow keys to slide the letters along the piano." : "";
+    var hp = host.querySelector("#sHelp2"); if (hp) var span = 0; W.forEach(function(m){ if (m >= SG.lo && m <= SG.hi) span++; }); hp.textContent = W.length > 11 ? (span > 11 ? "This song is wider than the letter keys: press the left and right arrow keys to slide the letters along the piano." : "Left and right arrow keys move the letters along the piano.") : ""; hp.style.color = span > 11 ? "#a35a00" : "#8a8aa0";
     var c4 = kb.querySelector('[data-m="60"]'); if (c4) c4.title = "middle C";
   }
   function drawScore(s){
     var el0 = host.querySelector("#sStaff");
     if (s.ex && window.VexFlow && typeof WBX !== "undefined") {
-      try { el0.innerHTML = ""; var res = WBX.renderScore(el0, JSON.parse(JSON.stringify(s.ex)), { width: 720 }); var sv = el0.querySelector("svg"); if (sv) { sv.style.maxWidth = "100%"; sv.style.height = "auto"; } if (el0.querySelector("svg")) return; } catch (e) { console.warn("Workbook renderer failed, using the simple one", e); }
+      try { el0.innerHTML = ""; var res = WBX.renderScore(el0, JSON.parse(JSON.stringify(s.ex)), { width: 720 }); var sv = el0.querySelector("svg"); if (sv) { sv.style.maxWidth = "100%"; sv.style.height = "auto"; } if (el0.querySelector("svg")) return; } catch (e) { console.warn("Workbook renderer failed, using the simple one", e); window.__wbFail = "the Workbook drawing code failed: " + String(e && e.message || e).slice(0, 120); }
     }
+    var why = !s.ex ? "this song has no worksheet data in the published settings" : typeof WBX === "undefined" ? "student-games.js on the site is older than the Workbook drawing code" : (window.__wbFail || "the Workbook drawing code reported a problem");
     var VF = window.VexFlow, el = host.querySelector("#sStaff"); el.innerHTML = "";
     if (!VF) { el.textContent = "The music drawing code did not load."; return; }
     var parts = String(s.time || "4/4").split("/"), free = s.time === "free" || parts.length < 2, num = free ? 4 : (+parts[0] || 4), den = free ? 4 : (+parts[1] || 4), cap = num * 4 / den;
@@ -1721,6 +1753,7 @@
         } catch (e) { console.warn("song bar failed", e); }
       });
     });
+    if (isTeacher()) { var nt = document.createElement("div"); nt.className = "ssg-sub"; nt.style.cssText = "color:#a35a00;font-size:12px"; nt.textContent = "Teacher note: the simple music view is showing because " + why + "."; el.appendChild(nt); }
     for (var k = 0; k < all.length - 1; k++) if (all[k].n.tie && !all[k].n.rest) { try { new VF.StaveTie({ firstNote: all[k].sn, lastNote: all[k + 1].sn, firstIndexes: [0], lastIndexes: [0] }).setContext(ctx).draw(); } catch (e) {} }
   }
   window.ssSongsTest = { midiOfKey: midiOfKey };

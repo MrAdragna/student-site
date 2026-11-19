@@ -1,8 +1,8 @@
-/* student-ui.js (X110, c13: device code stays at the bottom of the side panel; teacher PIN test-computer option on the pairing box; stale "paired" memory no longer hides the code; loads student-games.js (Rhythm and Songs games); X109: device code box; quiet check-ins) (Student site v1, X99, 16 Nov 2026, c12). Loaded AFTER NoteID.js. Student identity (locked to the Chromebook's owner, borrowing),
+/* student-ui.js (X111, c13: a test computer stays marked until unmarked (PIN); the preview highlight no longer scrolls the teacher panel; X110: device code stays at the bottom of the side panel; teacher PIN test-computer option on the pairing box; stale "paired" memory no longer hides the code; loads student-games.js (Rhythm and Songs games); X109: device code box; quiet check-ins) (Student site v1, X99, 16 Nov 2026, c12). Loaded AFTER NoteID.js. Student identity (locked to the Chromebook's owner, borrowing),
    session timer, the "show my session" screen, today's focus message, and the teacher-only controls blocked. */
 (function(){
   "use strict";
-  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X110";   // X101 (c13): failing class tests need no PIN; a test cut off by the end of class is saved as a practice test with the score so far
+  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X112";   // X101 (c13): failing class tests need no PIN; a test cut off by the end of class is saved as a practice test with the score so far
   function lg(k){ try { return localStorage.getItem(P + k); } catch (e) { return null; } }
   function ls(k, v){ try { localStorage.setItem(P + k, v); } catch (e) {} }
   function jget(k, d){ try { var v = JSON.parse(lg(k)); return v == null ? d : v; } catch (e) { return d; } }
@@ -415,6 +415,8 @@
     return ov;
   }
   function teacherGate(next){ pinPrompt({ title: "Teacher PIN", okLabel: "Go", cancelLabel: "Cancel", onOk: next }); }
+  window.ssTeacherGate = teacherGate;   // X112: the games use it to unlock extra songs
+  window.ssIsTester = function(){ return isTester(); };
 
   // ---- tests. DURING CLASS: the teacher's PIN starts a test, and at the end only the PIN can KEEP or CLEAR the score. OUTSIDE CLASS: no PIN; it is a "practice test" that never counts. ----
   window.ssGateTest = function(opts, retry){
@@ -496,12 +498,12 @@
     items.push('<button type="button" class="ss-btn" id="ssBorrow">Someone else is using this Chromebook</button>');
     if (me && me.borrowed) items.push('<button type="button" class="ss-btn" id="ssBack">Back to ' + esc(o.name) + '</button>');
     items.push('<button type="button" class="ss-btn quiet" id="ssChange">Change this Chromebook\'s owner (teacher only)</button>');
-    items.push('<button type="button" class="ss-btn quiet" id="ssTester">' + (isTester() ? "Stop being a test computer (show the device code again)" : "Use as my test computer today (no pairing needed)") + '</button>');
+    items.push('<button type="button" class="ss-btn quiet" id="ssTester">' + (isTester() ? "Unmark this computer as a test computer (show the device code again)" : "Mark this computer as a test computer (no pairing needed)") + '</button>');
     var ov = overlay('<h2>' + esc(me.name) + '</h2><p>' + (me.borrowed ? "Borrowing " + esc(o.name) + "'s Chromebook." : "This is " + esc(o.name) + "'s Chromebook.") + '</p><div class="ss-col">' + items.join("") + '</div><div class="ss-btns"><button type="button" class="ss-btn" id="ssX">Close</button></div>');
     ov.querySelector("#ssX").onclick = function(){ ov.remove(); };
     ov.querySelector("#ssBorrow").onclick = function(){ ov.remove(); askName(false); };
     var b = ov.querySelector("#ssBack"); if (b) b.onclick = function(){ ov.remove(); ls("current", "null"); endSession(); loadMe(); startSession(); chip(); applyStudent(); };
-    ov.querySelector("#ssTester").onclick = function(){ ov.remove(); if (isTester()) { ls("tester", "0"); try { localStorage.removeItem(P + "nopair:" + dstr()); localStorage.removeItem(P + "pairedlast"); } catch (e) {} } else ls("tester", String(Date.now())); if (pairOv) { pairOv.remove(); pairOv = null; } pairAtOpen(); };
+    ov.querySelector("#ssTester").onclick = function(){ ov.remove(); if (isTester()) { ls("tester", "0"); try { localStorage.removeItem(P + "nopair:" + dstr()); localStorage.removeItem(P + "pairedlast"); } catch (e) {} } else ls("tester", "1"); if (pairOv) { pairOv.remove(); pairOv = null; } pairAtOpen(); };
     ov.querySelector("#ssChange").onclick = function(){
       ov.remove();
       pinPrompt({ title: "Teacher PIN", okLabel: "Go", cancelLabel: "Cancel", onOk: function(){ ls("owner", "null"); ls("current", "null"); endSession(); me = null; chip(); askName(true); } });
@@ -526,7 +528,7 @@
   // X104: a settings push that PAUSES the site covers the page at once (even in the middle of a question); un-pausing / other changes reload the page when it is idle (student-cloud.js)
   // X106: live answers from the cloud service (student-cloud.js): HOLD (learning / review is up or bell-work is off: the page is covered and counts nothing) and PAIRING (the page shows its device code until the teacher pairs it to a student on his own computer).
   var holdOv = null, pairOv = null;
-  function isTester(){ var t = Number(lg("tester") || 0); return !!t && new Date(t).toDateString() === new Date().toDateString(); }   // X110: the teacher's own test computer (PIN), valid for today
+  function isTester(){ return lg("tester") === "1"; }   // X111: a test computer stays marked until the teacher unmarks it (PIN)
   function skipPair(){ return !!jget("nopair:" + dstr(), false) || isTester(); }
   function showPair(code){   // X108: the code is large, and it is shown by the page itself the moment it opens (no wait for the first answer from the service)
     if (pairOv && pairOv.isConnected) return;
@@ -534,7 +536,7 @@
       ((cfg.pairing && cfg.pairing.skip === false) ? "" : '<div style="margin-top:26px"><a href="#" id="ssNoPair" style="font-size:12px;color:#888;text-decoration:underline;opacity:.7">Start without pairing</a></div>') +
       (PREVIEWISH ? "" : '<div style="margin-top:10px"><a href="#" id="ssTestPc" style="font-size:11px;color:#aaa;text-decoration:underline;opacity:.6">Teacher</a></div>'), "gate pair");
     var np = pairOv.querySelector("#ssNoPair"); if (np) np.onclick = function(e){ e.preventDefault(); ls("nopair:" + dstr(), "true"); if (pairOv) { pairOv.remove(); pairOv = null; } };
-    var tp = pairOv.querySelector("#ssTestPc"); if (tp) tp.onclick = function(e){ e.preventDefault(); teacherGate(function(){ ls("tester", String(Date.now())); if (pairOv) { pairOv.remove(); pairOv = null; } }); };   // X110: the teacher PIN makes this computer a test computer for today (no pairing needed; students never get this)
+    var tp = pairOv.querySelector("#ssTestPc"); if (tp) tp.onclick = function(e){ e.preventDefault(); teacherGate(function(){ ls("tester", "1"); if (pairOv) { pairOv.remove(); pairOv = null; } }); };   // X110: the teacher PIN makes this computer a test computer for today (no pairing needed; students never get this)
   }
   window.ssPairNeeded = function(){   // X110: the device code, when this Chromebook still has to be paired (the full-screen cover shows it too, so it is never hidden behind the cover)
     try {
@@ -579,7 +581,7 @@
       var d = ev.data; if (!d || ev.source !== window.parent) return;
       if (d.type === "ss-focus") {
         var el = d.kind === "game" ? (document.querySelector('[data-action="hub-type"][data-type="' + String(d.id).replace(/"/g, "") + '"]') || document.querySelector('[data-ssg="' + String(d.id).replace(/"/g, "") + '"]')) : d.kind === "msg" ? document.querySelector('.ss-msg[data-mi="' + (+d.i) + '"]') : d.kind === "msgs" ? document.querySelector(".ss-msgs") : null;
-        if (!el) return; try { el.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (e) {}
+        if (!el) return; try { var rr = el.getBoundingClientRect(); window.scrollTo({ top: Math.max(0, window.scrollY + rr.top - window.innerHeight / 2 + rr.height / 2), behavior: "smooth" }); } catch (e) {}   // X111: scrolls only this page (scrollIntoView also moved the teacher panel around it)
         el.classList.remove("ss-pulse"); void el.offsetWidth; el.classList.add("ss-pulse"); setTimeout(function(){ el.classList.remove("ss-pulse"); }, 3200);
       } else if (d.type === "ss-show") {
         [].forEach.call(document.querySelectorAll(".ss-ov"), function(o){ o.remove(); }); pairOv = null;

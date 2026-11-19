@@ -1,4 +1,4 @@
-/* student-cloud.js (X106: the ping answer carries paired / hold, passed on as the page event ss-live; pings every 30 s; X104, c13, 17 Nov 2026). OPTIONAL cloud link, loaded after student-ui.js. Does NOTHING unless the published settings contain cloud.url.
+/* student-cloud.js (X109: no check-ins while the tab is hidden, the screen is locked, the window is not focused or nothing was touched for 5 minutes; X106: the ping answer carries paired / hold, passed on as the page event ss-live; pings every 30 s; X104, c13, 17 Nov 2026). OPTIONAL cloud link, loaded after student-ui.js. Does NOTHING unless the published settings contain cloud.url.
    - Only during class: every ~45 s (random +/- 5 s) one small status ping (random device code, state, game, right / wrong, active seconds). NO name unless
      cfg.cloud.names is true AND the service allows it. Outside class: no network at all.
    - Auto offline mode: a ping that fails or takes longer than 3 s marks this Chromebook "offline" (the site works exactly as before, everything stays on the device);
@@ -10,6 +10,7 @@
   var P = window.SS_PREFIX || "ss:", TIMEOUT = 3000, EVERY = 30000, BACKOFF = [30000], TEST = /[?&]cloudtest=1(&|$)/.test(location.search);   // X103b: open the student page with ?cloudtest=1 to ping outside class (for your own testing)
   function lg(k){ try { return localStorage.getItem(P + k); } catch (e) { return null; } }
   function ls(k, v){ try { localStorage.setItem(P + k, v); } catch (e) {} }
+  var QUIET_MS = 5 * 60000, TEST_NOQUIET = false;
   var cfg = null, url = "", fails = 0, timer = null, busy = false, reloadWait = null;
   var C = window.__ssCloud = { online: null, lastOk: 0, lastTry: 0, fails: 0, pings: 0 };
   function device(){ var d = lg("device"); if (!d || !/^[a-z0-9]{8,32}$/.test(d)) { d = ""; var a = new Uint8Array(12); (window.crypto || {}).getRandomValues ? crypto.getRandomValues(a) : a.forEach(function(_, i){ a[i] = Math.random() * 256; }); for (var i = 0; i < a.length; i++) d += (a[i] % 36).toString(36); ls("device", d); } return d; }
@@ -27,6 +28,10 @@
   function tick(){
     var s = st();
     if (!s || s.preview || (!s.inClass && !TEST)) { later(5000); return; }   // outside class (or preview): no network, just look again in 5 s
+    // X109: no request at all while this Chromebook is not really in use (tab hidden, screen locked, another window focused, or no mouse / keyboard for 5 minutes). The teacher's side simply stops hearing from it; the first sign of life sends a check-in at once.
+    var quiet = document.visibilityState !== "visible" || (typeof document.hasFocus === "function" && !document.hasFocus()) || (s.act && Date.now() - s.act > QUIET_MS);
+    if (quiet && !TEST_NOQUIET) { C.quiet = true; later(5000); return; }
+    C.quiet = false;
     if (busy) { later(2000); return; }
     busy = true; C.lastTry = Date.now();
     var body = { id: device(), state: s.state || "off", game: s.game, mode: s.mode, right: s.right, wrong: s.wrong, active: s.active, inClass: !!s.inClass, build: window.SS_BUILD || "" };
@@ -57,8 +62,10 @@
     reloadWait = setInterval(function(){ var s = st(); if (!s || !s.playing) { clearInterval(reloadWait); location.reload(); } }, 4000);   // never in the middle of a question
   }
   function retryNow(){ if (cfg && url && C.online === false) later(Math.random() * 2000); }
+  function wake(){ if (cfg && url && C.quiet) { C.quiet = false; later(300 + Math.random() * 700); } }   // X109: back in use after a quiet spell: check in right away
+  window.addEventListener("focus", wake); ["pointerdown", "keydown"].forEach(function(n){ window.addEventListener(n, wake, true); });
   window.addEventListener("online", retryNow);
-  document.addEventListener("visibilitychange", function(){ if (document.visibilityState === "visible") retryNow(); });
+  document.addEventListener("visibilitychange", function(){ if (document.visibilityState === "visible") { retryNow(); wake(); } });
   window.STUDENT_READY.then(function(c){
     cfg = c || {}; url = String((cfg.cloud && cfg.cloud.url) || "").replace(/\/+$/, "");
     if (!/^https:\/\/[a-z0-9.-]+$/i.test(url) && !/^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(url)) return;   // no address = no cloud, exactly like before

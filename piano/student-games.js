@@ -1134,15 +1134,16 @@
     if (AC.state === "suspended") { try { AC.resume(); } catch (e) {} }
     return AC;
   }
+  function gv(){ var v = Number((SC().rjudge || {}).volume); return isFinite(v) && (SC().rjudge || {}).volume != null ? Math.max(0, Math.min(100, v)) / 100 : 1; }   // the teacher's volume setting
   function blip(t, freq, dur, vol, type){
-    var c = audio(); if (!c) return;
+    var c = audio(); if (!c) return; vol = Math.max(0.0002, vol * gv());
     var o = c.createOscillator(), g = c.createGain(); o.type = type || "sine"; o.frequency.value = freq;
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.003); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + dur + 0.03);
   }
   var tones = {};   // id -> {o, g}: a tone that lasts as long as the key is down
   function toneOn(id, freq, vol, kind){
-    var c = audio(); if (!c || tones[id]) return;
+    var c = audio(); if (!c || tones[id]) return; vol = Math.max(0.0002, vol * gv());
     var o = c.createOscillator(), o2 = null, g = c.createGain(), t = c.currentTime;
     o.type = kind === "piano" ? "triangle" : "square"; o.frequency.value = freq;
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.006);
@@ -1176,7 +1177,7 @@
     ".ssg-pad { border: 3px dashed #3a2f8f; border-radius: 14px; padding: 14px; text-align: center; font-weight: 800; color: #3a2f8f; background: #f4f2ff; cursor: pointer; user-select: none; touch-action: none; } .ssg-pad.down { background: #3a2f8f; color: #fff; }" +
     ".ssg-btns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }" +
     ".ssg-kb { position: relative; height: 170px; user-select: none; touch-action: none; margin-top: auto; flex: none; } .ssg-kb .wk { position: absolute; top: 0; bottom: 0; border: 1px solid #555; background: #fff; border-radius: 0 0 6px 6px; box-sizing: border-box; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; font-size: 12px; font-weight: 800; color: #3a2f8f; } .ssg-kb .bk { position: absolute; top: 0; height: 62%; background: #222; border-radius: 0 0 5px 5px; z-index: 2; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 5px; font-size: 11px; font-weight: 800; color: #fff; box-sizing: border-box; } .ssg-kb .wk.down { background: #cfe3ff; } .ssg-kb .bk.down { background: #3a7bd5; } .ssg-kb .c4 { background: #f7f4ff; }" +
-    ".ssg-count span { display: inline-block; min-width: 84px; text-align: center; padding: 4px 10px 6px; border-radius: 14px; border: 2px solid transparent; } .ssg-count span.on { background: #3a2f8f; color: #fff; border-color: #3a2f8f; transform: none; } .ssg-count span.on small { color: #d9d4ff; } .ssg-dots { display: inline-flex; gap: 3px; vertical-align: middle; } .ssg-dots i { width: 10px; height: 10px; border-radius: 50%; background: #ddd; display: inline-block; } .ssg-dots i.y { background: #1a8a4a; } .ssg-dots i.n { background: #c0392b; } .bdg { display: inline-block; font-size: 10px; font-weight: 800; border-radius: 8px; padding: 0 6px; margin-right: 3px; text-transform: uppercase; } .bdg.late { background: #fbdcd8; color: #a3281a; } .bdg.now { background: #d9f3e3; color: #14683a; } .ssg-item.lk { opacity: .5; } .ssg-ver { font-size: 11px; color: #999; font-weight: 600; } " +
+    ".ssg-count span { display: inline-block; min-width: 84px; text-align: center; padding: 4px 10px 6px; border-radius: 14px; border: 2px solid transparent; } .ssg-count span.on { background: #3a2f8f; color: #fff; border-color: #3a2f8f; transform: none; } .ssg-count span.on small { color: #d9d4ff; } .ssg-dots { display: inline-flex; gap: 3px; vertical-align: middle; } .ssg-dots i { width: 10px; height: 10px; border-radius: 50%; background: #ddd; display: inline-block; } .ssg-dots i.y { background: #1a8a4a; } .ssg-dots i.n { background: #c0392b; } .ssg-dots i.o { background: #e9b320; } .bdg { display: inline-block; font-size: 10px; font-weight: 800; border-radius: 8px; padding: 0 6px; margin-right: 3px; text-transform: uppercase; } .bdg.late { background: #fbdcd8; color: #a3281a; } .bdg.now { background: #d9f3e3; color: #14683a; } .ssg-item.lk { opacity: .5; } .nocount { margin-top: 4px; font-size: 14px; font-weight: 700; color: #a35a00; } .ssg-ver { font-size: 11px; color: #999; font-weight: 600; } " +
     ".ssg-grp { font-size: 12px; font-weight: 800; color: #6b64a8; text-transform: uppercase; letter-spacing: .04em; margin: 8px 2px 0; } .ssg-item[disabled] { opacity: .45; cursor: not-allowed; } [data-ssg].on { outline: 3px solid #3a2f8f; }" +
     "@media (max-width: 900px) { .ssg-side { width: 150px; } }";
   function ensureCss(){ if (document.getElementById("ssgCss")) return; var st = document.createElement("style"); st.id = "ssgCss"; st.textContent = CSS; document.head.appendChild(st); }
@@ -1246,14 +1247,14 @@
     var c = rr && rr.cfg || {}; cfg = { weights: c.weights || {}, shapeRules: c.shapeRules || {}, profiles: [] };
     try { levels = (list ? JSON.parse(JSON.stringify(list)) : seedLevels()).map(normalizeLevel); } catch (e) { levels = seedLevels().map(normalizeLevel); }
   }
-  function J(){ var j = SC().rjudge || {}; function g(k, d){ var v = Number(j[k]); return isFinite(v) && j[k] != null && j[k] !== "" ? v : d; } return { startMin: g("startMin", 90), startMax: g("startMax", 150), closeMult: g("closeMult", 1.8), holdMin: g("holdMin", 8), holdTolMs: g("holdTolMs", 150), holdTolPct: g("holdTolPct", 20), gapPct: g("gapPct", 50), pass: g("pass", 85) / 100, need: g("need", 5), of: g("of", 5) }; }
+  function J(){ var j = SC().rjudge || {}; function g(k, d){ var v = Number(j[k]); return isFinite(v) && j[k] != null && j[k] !== "" ? v : d; } return { startMin: g("startMin", 90), startMax: g("startMax", 150), closeMult: g("closeMult", 1.8), holdMin: g("holdMin", 8), holdTolMs: g("holdTolMs", 150), holdTolPct: g("holdTolPct", 20), gapPct: g("gapPct", 50), pass: g("pass", 85) / 100, need: g("need", 4), yellow: g("yellow", 70) / 100, of: g("of", 5) }; }
   var COUNTOFF = { "4/4": "0:1 4:2 8:rea-/3 10:dy/+ 12:and/4", "3/4": "0:1 4:rea-/2 6:dy/+ 8:and/3", "6/8": "0:1 2:+ 4:a 6:2 8:+ 10:a" };
   function countTokens(T){
     var key = "ts_" + T.num + T.den, c = (SC().rhythm && SC().rhythm.cfg || {}), txt = (c.countOff && c.countOff[key]) || COUNTOFF[T.num + "/" + T.den] || COUNTOFF["4/4"];
     return String(txt).split(/\s+/).filter(Boolean).map(function(t){ var m = /^(\d+):([^\/]*)(?:\/(.*))?$/.exec(t); return m ? { tick: +m[1], word: m[2], sub: m[3] || "" } : null; }).filter(Boolean);
   }
   function rResults(){ return jget("rhythm-results", {}); }
-  function cleared(lv){ var r = rResults()[lv.id], j = J(); if (!r || !r.hist) return false; var h = r.hist.slice(-j.of); return h.reduce(function(a, b){ return a + b; }, 0) >= j.need; }
+  function cleared(lv){ var r = rResults()[lv.id], j = J(); if (!r || !r.h2) return false; var h = r.h2.slice(-j.of); if (h.length < j.of) return false; var g = 0; for (var k = 0; k < h.length; k++) { if (h[k] === 0) return false; if (h[k] === 2) g++; } return g >= j.need && h[h.length - 1] === 2; }   // like RhythmRandomizer: no reds, enough greens (default 4 of the last 5), the newest one green
   function allowedLevel(i){ for (var k = 0; k < i; k++) if (!cleared(levels[k])) return false; return true; }   // a level opens when every level before it is cleared (good tries with the follower line OFF)
   var NAMES_SIMPLE = { 4: ["1", "2", "3", "4"], 3: ["1", "2", "3"] }, NAMES_68 = ["1", "+", "a", "2", "+", "a"];
   function tickMsOf(T, bpm){ return 60000 / (bpm * T.beat); }
@@ -1265,8 +1266,8 @@
       '<span class="ctl">Tempo <button type="button" class="ssg-btn sm" id="rSlow">&minus;</button><b id="rTempo"></b><button type="button" class="ssg-btn sm" id="rFast">+</button></span>' +
       '<span class="ctl" title="If you always tap late, press + ; if early, press &minus;">Sync <button type="button" class="ssg-btn sm" id="rSyncM">&minus;</button><b id="rSync"></b> ms <button type="button" class="ssg-btn sm" id="rSyncP">+</button></span>');
     body.innerHTML = '<div class="ssg-side" id="rLevels"></div><div class="ssg-main"><div class="ssg-sub" id="rTitle"></div><div class="ssg-count" id="rCount"></div><div class="ssg-staff" id="rStaff"></div><div class="ssg-lane" id="rLane"></div>' +
-      '<div class="ssg-msg" id="rMsg"></div><div class="ssg-sub" id="rDet"></div><div class="ssg-btns"><button type="button" class="ssg-btn primary" id="rStart">Start (Space)</button><button type="button" class="ssg-btn" id="rAgain" style="display:none">Try again (Space)</button><button type="button" class="ssg-btn" id="rNew">New rhythm (N)</button><button type="button" class="ssg-btn" id="rNext" style="display:none">Next level</button></div>' +
-      '<div class="ssg-pad" id="rPad">Tap here, or press Space (any key works). Hold the key down for half notes and longer, and let go when the note ends. Your taps show up as blue bars as you play; the boxes showing what you should have played appear when you finish.</div></div>';
+      '<div class="ssg-msg" id="rMsg"></div><div class="ssg-sub" id="rDet"></div><div class="ssg-btns"><button type="button" class="ssg-btn primary" id="rStart">Start (Space)</button><button type="button" class="ssg-btn" id="rAgain" style="display:none">Try again (Space)</button><button type="button" class="ssg-btn" id="rNew">New rhythm</button><button type="button" class="ssg-btn" id="rNext" style="display:none">Next level</button></div>' +
+      '<div class="ssg-pad" id="rPad">Tap here, or press Space (any key works except N, Esc and Backspace; Esc or Backspace stops the try and scores what you played). Hold the key down for half notes and longer, and let go when the note ends. Your taps show up as blue bars as you play; the boxes showing what you should have played appear when you finish.</div></div>';
     var last = Number(lg("rhythm-level") || 0); if (!(last >= 0 && last < levels.length) || !allowedLevel(last)) last = 0;
     R = { lv: last, tempo: 0, phase: "ready", taps: [], sync: Number(lg("rhythm-sync") || 0) || 0, click: true, follow: true, held: {}, ex: null };
     var h = host;
@@ -1281,7 +1282,7 @@
     $("rNew").onclick = function(){ newExercise(); this.blur(); };
     $("rNext").onclick = function(){ setLevel(Math.min(levels.length - 1, R.lv + 1)); this.blur(); };
     var pad = $("rPad");
-    pad.addEventListener("pointerdown", function(ev){ ev.preventDefault(); try { pad.setPointerCapture(ev.pointerId); } catch (e) {} pad.classList.add("down"); if (R.phase === "ready") startRun(); else if (R.phase === "done") tryAgain(); else tapDown("pointer", ev.timeStamp > 0 ? ev.timeStamp : performance.now()); });
+    pad.addEventListener("pointerdown", function(ev){ ev.preventDefault(); try { pad.setPointerCapture(ev.pointerId); } catch (e) {} pad.classList.add("down"); if (R.phase === "ready") startRun(); else if (R.phase === "done") { /* the screen stays as it is until Start / Space */ } else tapDown("pointer", ev.timeStamp > 0 ? ev.timeStamp : performance.now()); });
     var padUp = function(ev){ pad.classList.remove("down"); tapUp("pointer", ev && ev.timeStamp > 0 ? ev.timeStamp : performance.now()); };
     pad.addEventListener("pointerup", padUp); pad.addEventListener("pointercancel", padUp);
     var kd = function(ev){
@@ -1289,12 +1290,13 @@
       var k = ev.key;
       if (ev.metaKey || ev.ctrlKey || ev.altKey || k === "Shift" || k === "Control" || k === "Alt" || k === "Meta" || k === "Tab" || /^F\d+$/.test(k) || k === "CapsLock") return;
       if (ev.target && /^(INPUT|TEXTAREA|SELECT)$/.test(ev.target.tagName) && k !== " ") return;
+      if (k === "n" || k === "N") return;   // N, Escape and Backspace are not rhythm keys
       ev.preventDefault(); ev.stopPropagation();
-      if (k === "Escape") { if (R.phase === "count" || R.phase === "run") abortRun(); return; }
+      if (k === "Escape" || k === "Backspace") { if (R.phase === "count" || R.phase === "run") abortRun(); return; }
       if (ev.repeat) return;
       var t = ev.timeStamp > 0 ? ev.timeStamp : performance.now();
-      if (R.phase === "ready") { if (k === " " || k === "Enter") startRun(); else if (k === "n" || k === "N") newExercise(); return; }
-      if (R.phase === "done") { if (k === " " || k === "Enter") tryAgain(); else if (k === "n" || k === "N") newExercise(); return; }
+      if (R.phase === "ready") { if (k === " " || k === "Enter") startRun(); return; }
+      if (R.phase === "done") { if ((k === " " || k === "Enter") && performance.now() - (R.doneAt || 0) > 900) tryAgain(); return; }
       tapDown(ev.code || k, t);
     };
     var ku = function(ev){ if (!host || host.getAttribute("data-game") !== "rhythm") return; ev.preventDefault(); ev.stopPropagation(); tapUp(ev.code || ev.key, ev.timeStamp > 0 ? ev.timeStamp : performance.now()); };
@@ -1302,7 +1304,7 @@
     cleanup = function(){ window.removeEventListener("keydown", kd, true); window.removeEventListener("keyup", ku, true); cancelAnimationFrame(raf); R = null; };
     drawLevels(); setLevel(last, true);
   }
-  function dotsHtml(lv){ var r = rResults()[lv.id], h = (r && r.hist || []).slice(-5), o = '<span class="ssg-dots" title="Last 5 tries">'; for (var k = 0; k < 5; k++) { var v = h[k]; o += '<i class="' + (v === 1 ? "y" : v === 0 ? "n" : "") + '"></i>'; } return o + '</span>'; }
+  function dotsHtml(lv){ var r = rResults()[lv.id], h = (r && r.h2 || []).slice(-5), o = '<span class="ssg-dots" title="Last 5 tries">'; for (var k = 0; k < 5; k++) { var v = h[k]; o += '<i class="' + (v === 2 ? "y" : v === 1 ? "o" : v === 0 ? "n" : "") + '"></i>'; } return o + '</span>'; }
   function curLevel(){ for (var k = 0; k < levels.length; k++) if (!cleared(levels[k])) return k; return -1; }
   function drawLevels(){
     var res = rResults(), el = host.querySelector("#rLevels");
@@ -1418,17 +1420,18 @@
   }
   function drawLane(){
     var lane = host.querySelector("#rLane"), T = R.ex.ts, s = laneSpan(), E = expectedEvents(); R.E = E;
-    var h = '<div class="cin" style="left:0;width:' + lx(0) + '%"></div>';
-    for (var t = s.min; t <= s.max; t += T.beat) h += '<div class="bl' + ((t % T.ticks === 0) ? " ml" : "") + '" style="left:' + lx(t) + '%"></div>';
+    var h = R.reveal ? '<div class="cin" style="left:0;width:' + lx(0) + '%"></div>' : "";
+    if (R.reveal) for (var t = s.min; t <= s.max; t += T.beat) h += '<div class="bl' + ((t % T.ticks === 0) ? " ml" : "") + '" style="left:' + lx(t) + '%"></div>';
     if (R.reveal) E.rests.forEach(function(r){ h += '<div class="ex rest" style="left:' + lx(r.abs) + '%;width:' + (r.ticks / (s.max - s.min) * 100) + '%"></div>'; });
     if (R.reveal) E.evs.forEach(function(e, i){ h += '<div class="ex" id="rEx' + i + '" style="left:' + lx(e.abs) + '%;width:' + (e.ticks / (s.max - s.min) * 100) + '%"></div>'; });
-    h += '<div class="lab" style="left:' + lx(-T.ticks / 2) + '%">count-in</div>';
+    if (R.reveal) h += '<div class="lab" style="left:' + lx(-T.ticks / 2) + '%">count-in</div>';
     lane.innerHTML = h; lane.querySelectorAll(".ex:not(.rest)");
   }
 
   // ---- the run ----
   function startRun(){
     if (!R || !R.ex || R.phase === "count" || R.phase === "run") return;
+    if (R.needNew) { R.needNew = false; newExercise(); }   // you got the last one: a fresh rhythm
     var c = audio(); if (!c) { host.querySelector("#rMsg").textContent = "This computer cannot play sound here."; return; }
     var T = R.ex.ts; R.tickMs = tickMsOf(T, R.tempo); R.taps = []; R.held = {}; R.tries++; R.reveal = false;
     drawLane();
@@ -1462,7 +1465,7 @@
     if (!R || (R.phase !== "count" && R.phase !== "run")) return;
     if (R.held[code]) return;
     var T = R.ex.ts, tick = (t - R.w0) / R.tickMs, tp = { down: t, up: null, code: code, tick: tick };
-    toneOn("r:" + code, 392, 0.2, "wood");
+    toneOn("r:" + code, 523.25, 0.3, "piano");
     var el = document.createElement("div"); el.className = "ac"; el.style.left = lx(tick) + "%"; el.style.width = "0.4%"; tp.el = el; host.querySelector("#rLane").appendChild(el);
     R.held[code] = tp;
     if (R.phase === "run" || tick > -T.beat * 0.5) R.taps.push(tp); else { tp.count = true; }
@@ -1473,9 +1476,10 @@
     delete R.held[code]; tp.up = t;
     if (tp.el) { var tk = (t - R.w0) / R.tickMs; tp.el.style.width = Math.max(0.4, lx(tk) - lx(tp.tick)) + "%"; }
   }
-  function abortRun(){
-    cancelAnimationFrame(raf); toneAll(); if (!R) return;
-    R.phase = "ready"; R.held = {}; var h = host; if (h) { showReady(); h.querySelector("#rMsg").textContent = "Stopped. Press Space to start again."; }
+  function abortRun(){   // Escape / Backspace: stop here; what you played so far is scored as it is, and the same rhythm stays up
+    if (!R) return;
+    if (R.phase === "run" && R.taps.length) { finishRun(); return; }
+    cancelAnimationFrame(raf); toneAll(); R.phase = "ready"; R.held = {}; var h = host; if (h) { showReady(); h.querySelector("#rMsg").textContent = "Stopped. Press Space to start again."; }
   }
   function tryAgain(){ if (!R || !R.ex) return; R.phase = "ready"; startRun(); }
 
@@ -1510,7 +1514,7 @@
   function finishRun(){
     cancelAnimationFrame(raf); toneAll(); if (!R) return;
     Object.keys(R.held).forEach(function(k){ tapUp(k, performance.now()); });
-    R.phase = "done"; var S = score(), h = host, lv = levels[R.lv];
+    R.phase = "done"; R.doneAt = performance.now(); var S = score(), h = host, lv = levels[R.lv]; R.needNew = !!S.pass;
     R.reveal = true; drawLane();   // only now do the boxes (what you should have played) and the bars (what you played) appear
     var lane = h.querySelector("#rLane");
     R.taps.forEach(function(tp){ var t0 = (tp.down - R.w0) / R.tickMs, t1 = ((tp.up == null ? tp.down + 80 : tp.up) - R.w0) / R.tickMs, el = document.createElement("div"); el.className = "ac" + (tp.extra ? " extra" : ""); el.style.left = lx(t0) + "%"; el.style.width = Math.max(0.4, lx(t1) - lx(t0)) + "%"; lane.appendChild(el); });
@@ -1521,21 +1525,21 @@
       el.title = "Start: " + (r.dt == null ? "missed" : (r.dt > 0 ? r.dt + " ms late" : (-r.dt) + " ms early")) + (r.hold === "na" ? "" : "; end: " + (r.hold === "good" ? "good" : r.hold === "short" ? "you let go too early" : "you held too long"));
     });
     var pct = Math.round(S.ratio * 100);
-    h.querySelector("#rMsg").innerHTML = S.pass ? '<span class="big okc">Got it! ' + pct + '%</span>' + (R.follow ? ' <small>(turn the follower line off to count toward clearing this level)</small>' : (cleared(lv) ? ' <b>Level cleared!</b>' : "")) : '<span class="big no">Not yet. ' + pct + '%</span>';
+    h.querySelector("#rMsg").innerHTML = S.pass ? '<span class="big okc">Got it! ' + pct + '%</span>' + (R.follow ? '<div class="nocount">This try did NOT count: the follower line is on. Turn it off (top of the game) so the try counts toward the next level.</div>' : (cleared(lv) ? ' <b>Level cleared!</b>' : "")) : '<span class="big no">Not yet. ' + pct + '%</span>' + (R.follow ? '<div class="nocount">The follower line is on, so this try would not count anyway.</div>' : "");
     var bits = ["Notes started on time: <b>" + S.onOk + " of " + S.onN + "</b>"];
     if (S.holdN) bits.push("Long notes held the right length: <b>" + S.holdOk + " of " + S.holdN + "</b>");
     if (S.extra) bits.push("Extra taps: <b>" + S.extra + "</b>");
     if (S.matched >= 3 && Math.abs(S.avg) >= 40) bits.push("You tapped about <b>" + Math.abs(S.avg) + " ms " + (S.avg > 0 ? "late" : "early") + "</b> on average" + (Math.abs(S.avg) >= 70 ? " (the Sync buttons at the top can shift the timing if your keyboard is slow)" : ""));
     h.querySelector("#rDet").innerHTML = bits.join("<br>");
     var res = rResults(), r = res[lv.id] || (res[lv.id] = { tries: 0, passes: 0, best: null });
-    r.tries++; if (S.pass) r.passes++; if (!R.follow) { r.hist = (r.hist || []).concat(S.pass ? 1 : 0).slice(-20); } if (r.best == null || S.ratio > r.best) r.best = S.ratio; ls("rhythm-results", JSON.stringify(res));
+    r.tries++; if (S.pass) r.passes++; if (!R.follow) { r.h2 = (r.h2 || []).concat(S.pass ? 2 : (S.ratio >= J().yellow ? 1 : 0)).slice(-20); } if (r.best == null || S.ratio > r.best) r.best = S.ratio; ls("rhythm-results", JSON.stringify(res));
     evt("ss-attempt", { title: "Rhythm: " + lv.name, mode: "practice", ok: S.pass });
     h.querySelector("#rStart").style.display = "none"; h.querySelector("#rAgain").style.display = ""; h.querySelector("#rNext").style.display = (R.lv < levels.length - 1 && allowedLevel(R.lv + 1)) ? "" : "none";
     drawLevels();
     if (PREVIEWISH || (window.ssIsTester && window.ssIsTester())) {
       var mk = document.createElement("div"); mk.className = "ssg-btns"; mk.innerHTML = '<span class="ssg-sub">Teacher: was this fair?</span><button type="button" class="ssg-btn sm" data-mk="1">Count as right</button><button type="button" class="ssg-btn sm" data-mk="0">Count as wrong</button><span class="ssg-sub" id="rMkMsg"></span>';
       h.querySelector("#rDet").appendChild(mk);
-      [].forEach.call(mk.querySelectorAll("[data-mk]"), function(b){ b.onclick = function(){ var v = +b.getAttribute("data-mk"), rs = rResults(), rr = rs[lv.id]; if (rr && rr.hist && rr.hist.length && !R.follow) { rr.hist[rr.hist.length - 1] = v; ls("rhythm-results", JSON.stringify(rs)); drawLevels(); mk.querySelector("#rMkMsg").textContent = "Marked " + (v ? "right" : "wrong") + "."; } else mk.querySelector("#rMkMsg").textContent = "Only tries with the follower line off are recorded."; }; });
+      [].forEach.call(mk.querySelectorAll("[data-mk]"), function(b){ b.onclick = function(){ var v = +b.getAttribute("data-mk"), rs = rResults(), rr = rs[lv.id]; if (rr && rr.h2 && rr.h2.length && !R.follow) { rr.h2[rr.h2.length - 1] = v ? 2 : 0; ls("rhythm-results", JSON.stringify(rs)); drawLevels(); mk.querySelector("#rMkMsg").textContent = "Marked " + (v ? "right" : "wrong") + "."; } else mk.querySelector("#rMkMsg").textContent = "Only tries with the follower line off are recorded."; }; });
     }
     var ph = h.querySelector("#rPh"); if (ph) ph.style.display = "none"; R.geo.ph.setAttribute("visibility", "hidden"); drawCount(-1);
   }

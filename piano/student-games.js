@@ -1135,18 +1135,21 @@
     return AC;
   }
   function gv(){ var v = Number((SC().rjudge || {}).volume); return isFinite(v) && (SC().rjudge || {}).volume != null ? Math.max(0, Math.min(100, v)) / 100 : 1; }   // the teacher's volume setting
+  var sched = [];   // scheduled metronome clicks, so a stopped try can silence them
+  function stopSched(){ sched.forEach(function(o){ try { o.stop(0); o.disconnect(); } catch (e) {} }); sched = []; }
   function blip(t, freq, dur, vol, type){
     var c = audio(); if (!c) return; vol = Math.max(0.0002, vol * gv());
     var o = c.createOscillator(), g = c.createGain(); o.type = type || "sine"; o.frequency.value = freq;
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.003); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + dur + 0.03);
+    o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + dur + 0.03); sched.push(o); if (sched.length > 400) sched.shift();
   }
   var tones = {};   // id -> {o, g}: a tone that lasts as long as the key is down
   function toneOn(id, freq, vol, kind){
     var c = audio(); if (!c || tones[id]) return; vol = Math.max(0.0002, vol * gv());
     var o = c.createOscillator(), o2 = null, g = c.createGain(), t = c.currentTime;
-    o.type = kind === "piano" ? "triangle" : "square"; o.frequency.value = freq;
+    o.type = kind === "piano" ? "triangle" : kind === "mellow" ? "sine" : "square"; o.frequency.value = freq;
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.006);
+    if (kind === "mellow") { g.gain.exponentialRampToValueAtTime(vol * 0.3, t + 0.5); o2 = c.createOscillator(); o2.type = "sine"; o2.frequency.value = freq * 3; var g3 = c.createGain(); g3.gain.setValueAtTime(0.15, t); g3.gain.exponentialRampToValueAtTime(0.001, t + 0.25); o2.connect(g3); g3.connect(g); o2.start(t); }
     if (kind === "piano") { g.gain.exponentialRampToValueAtTime(vol * 0.35, t + 1.6); o2 = c.createOscillator(); o2.type = "sine"; o2.frequency.value = freq * 2; var g2 = c.createGain(); g2.gain.value = 0.22; o2.connect(g2); g2.connect(g); o2.start(t); }
     o.connect(g); g.connect(c.destination); o.start(t);
     tones[id] = { o: o, o2: o2, g: g };
@@ -1175,7 +1178,7 @@
     ".ssg-lane .lab { position: absolute; bottom: 3px; font-size: 11px; font-weight: 700; color: #555; transform: translateX(-50%); white-space: nowrap; }" +
     ".ssg-msg { font-size: 17px; font-weight: 700; min-height: 26px; } .ssg-msg .big { font-size: 28px; } .ssg-msg .okc { color: #1a8a4a; } .ssg-msg .no { color: #c0392b; } .ssg-sub { font-size: 14px; color: #555; font-weight: 600; line-height: 1.5; }" +
     ".ssg-pad { border: 3px dashed #3a2f8f; border-radius: 14px; padding: 14px; text-align: center; font-weight: 800; color: #3a2f8f; background: #f4f2ff; cursor: pointer; user-select: none; touch-action: none; } .ssg-pad.down { background: #3a2f8f; color: #fff; }" +
-    ".ssg-btns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }" +
+    "#rStart, #rAgain { display: none !important; } .ssg-btn[disabled] { opacity: .35; cursor: not-allowed; } .ssg-lane .nowbox { position: absolute; left: 10px; right: 10px; top: 16px; height: 64px; border: 3px solid #cfcbe8; background: #fff; border-radius: 12px; font-weight: 800; font-size: 20px; text-align: center; line-height: 58px; color: #b9b5d8; transition: background .06s; } .ssg-lane .nowbox.on { background: #3a7bd5; border-color: #2a5aa8; color: #fff; } .nocount { margin-top: 8px; padding: 10px 14px; border-radius: 12px; background: #fff0c7; border: 3px solid #e9a31a; font-size: 20px; font-weight: 800; color: #8a4b00; } .ssg-btns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }" +
     ".ssg-kb { position: relative; height: 170px; user-select: none; touch-action: none; margin-top: auto; flex: none; } .ssg-kb .wk { position: absolute; top: 0; bottom: 0; border: 1px solid #555; background: #fff; border-radius: 0 0 6px 6px; box-sizing: border-box; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; font-size: 12px; font-weight: 800; color: #3a2f8f; } .ssg-kb .bk { position: absolute; top: 0; height: 62%; background: #222; border-radius: 0 0 5px 5px; z-index: 2; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 5px; font-size: 11px; font-weight: 800; color: #fff; box-sizing: border-box; } .ssg-kb .wk.down { background: #cfe3ff; } .ssg-kb .bk.down { background: #3a7bd5; } .ssg-kb .c4 { background: #f7f4ff; }" +
     ".ssg-count span { display: inline-block; min-width: 84px; text-align: center; padding: 4px 10px 6px; border-radius: 14px; border: 2px solid transparent; } .ssg-count span.on { background: #3a2f8f; color: #fff; border-color: #3a2f8f; transform: none; } .ssg-count span.on small { color: #d9d4ff; } .ssg-dots { display: inline-flex; gap: 3px; vertical-align: middle; } .ssg-dots i { width: 10px; height: 10px; border-radius: 50%; background: #ddd; display: inline-block; } .ssg-dots i.y { background: #1a8a4a; } .ssg-dots i.n { background: #c0392b; } .ssg-dots i.o { background: #e9b320; } .bdg { display: inline-block; font-size: 10px; font-weight: 800; border-radius: 8px; padding: 0 6px; margin-right: 3px; text-transform: uppercase; } .bdg.late { background: #fbdcd8; color: #a3281a; } .bdg.now { background: #d9f3e3; color: #14683a; } .ssg-item.lk { opacity: .5; } .nocount { margin-top: 4px; font-size: 14px; font-weight: 700; color: #a35a00; } .ssg-ver { font-size: 11px; color: #999; font-weight: 600; } " +
     ".ssg-grp { font-size: 12px; font-weight: 800; color: #6b64a8; text-transform: uppercase; letter-spacing: .04em; margin: 8px 2px 0; } .ssg-item[disabled] { opacity: .45; cursor: not-allowed; } [data-ssg].on { outline: 3px solid #3a2f8f; }" +
@@ -1255,19 +1258,20 @@
   }
   function rResults(){ return jget("rhythm-results", {}); }
   function cleared(lv){ var r = rResults()[lv.id], j = J(); if (!r || !r.h2) return false; var h = r.h2.slice(-j.of); if (h.length < j.of) return false; var g = 0; for (var k = 0; k < h.length; k++) { if (h[k] === 0) return false; if (h[k] === 2) g++; } return g >= j.need && h[h.length - 1] === 2; }   // like RhythmRandomizer: no reds, enough greens (default 4 of the last 5), the newest one green
-  function allowedLevel(i){ for (var k = 0; k < i; k++) if (!cleared(levels[k])) return false; return true; }   // a level opens when every level before it is cleared (good tries with the follower line OFF)
+  function isTeacher(){ return !!(PREVIEWISH || (window.ssIsTester && window.ssIsTester())); }
+  function allowedLevel(i){ if (i <= 1 || isTeacher()) return true; for (var k = 0; k < i; k++) if (!cleared(levels[k])) return false; return true; }   // levels 1 and 2 are always open; a level opens when every level before it is cleared (teacher test computers see all)
   var NAMES_SIMPLE = { 4: ["1", "2", "3", "4"], 3: ["1", "2", "3"] }, NAMES_68 = ["1", "+", "a", "2", "+", "a"];
   function tickMsOf(T, bpm){ return 60000 / (bpm * T.beat); }
 
   function openRhythm(){
     if (!window.VexFlow) { alert("The music drawing code did not load. Reload the page."); return; }
     if (!levels.length) loadLevels();
-    var body = openHost("rhythm", "Rhythm", '<span class="ssg-ver">games X112</span>' + '<label title="A thin line on the music that follows the beat. Turn it off to prove you know the rhythm: a level only counts as cleared with this off"><input type="checkbox" id="rFollow" checked> Follower line (help)</label>' +
+    var body = openHost("rhythm", "Rhythm", '<span class="ssg-ver">games X114</span>' + '<label title="A thin line on the music that follows the beat. Turn it off to prove you know the rhythm: a level only counts as cleared with this off"><input type="checkbox" id="rFollow" checked> Follower line (help)</label>' +
       '<span class="ctl">Tempo <button type="button" class="ssg-btn sm" id="rSlow">&minus;</button><b id="rTempo"></b><button type="button" class="ssg-btn sm" id="rFast">+</button></span>' +
-      '<span class="ctl" title="If you always tap late, press + ; if early, press &minus;">Sync <button type="button" class="ssg-btn sm" id="rSyncM">&minus;</button><b id="rSync"></b> ms <button type="button" class="ssg-btn sm" id="rSyncP">+</button></span>');
+      '<span class="ctl" id="rTeach" style="display:none" title="Teacher only. The timing adjusts by itself from each try; this shows it.">Teacher: timing <button type="button" class="ssg-btn sm" id="rSyncM">&minus;</button><b id="rSync"></b> ms <button type="button" class="ssg-btn sm" id="rSyncP">+</button> <button type="button" class="ssg-btn sm" id="rResetLv" title="Forget every level\'s tries on this computer">Reset all levels</button> <button type="button" class="ssg-btn sm" id="rResetOne" title="Forget the tries of this level">Reset this level</button> <button type="button" class="ssg-btn sm" id="rClearOne" title="Count this level as cleared">Clear this level</button></span>');
     body.innerHTML = '<div class="ssg-side" id="rLevels"></div><div class="ssg-main"><div class="ssg-sub" id="rTitle"></div><div class="ssg-count" id="rCount"></div><div class="ssg-staff" id="rStaff"></div><div class="ssg-lane" id="rLane"></div>' +
-      '<div class="ssg-msg" id="rMsg"></div><div class="ssg-sub" id="rDet"></div><div class="ssg-btns"><button type="button" class="ssg-btn primary" id="rStart">Start (Space)</button><button type="button" class="ssg-btn" id="rAgain" style="display:none">Try again (Space)</button><button type="button" class="ssg-btn" id="rNew">New rhythm</button><button type="button" class="ssg-btn" id="rNext" style="display:none">Next level</button></div>' +
-      '<div class="ssg-pad" id="rPad">Tap here, or press Space (any key works except N, Esc and Backspace; Esc or Backspace stops the try and scores what you played). Hold the key down for half notes and longer, and let go when the note ends. Your taps show up as blue bars as you play; the boxes showing what you should have played appear when you finish.</div></div>';
+      '<div class="ssg-msg" id="rMsg"></div><div class="ssg-sub" id="rDet"></div><div class="ssg-btns"><button type="button" class="ssg-btn primary" id="rStart">Start</button><button type="button" class="ssg-btn" id="rAgain" style="display:none">Try again</button><button type="button" class="ssg-btn" id="rStop" disabled>Backspace to stop</button><button type="button" class="ssg-btn" id="rNew">N for new rhythm</button><button type="button" class="ssg-btn" id="rNext" style="display:none">Next level</button></div>' +
+      '<div class="ssg-pad" id="rPad">Click here or press any key</div></div></div>';
     var last = Number(lg("rhythm-level") || 0); if (!(last >= 0 && last < levels.length) || !allowedLevel(last)) last = 0;
     R = { lv: last, tempo: 0, phase: "ready", taps: [], sync: Number(lg("rhythm-sync") || 0) || 0, click: true, follow: true, held: {}, ex: null };
     var h = host;
@@ -1279,10 +1283,11 @@
     $("rSyncM").onclick = function(){ sy(-10); }; $("rSyncP").onclick = function(){ sy(10); }; sy(0);
     $("rStart").onclick = function(){ startRun(); this.blur(); };
     $("rAgain").onclick = function(){ tryAgain(); this.blur(); };
-    $("rNew").onclick = function(){ newExercise(); this.blur(); };
+    $("rNew").onclick = function(){ if (R.lv > 0) newExercise(); this.blur(); };
+    $("rStop").onclick = function(){ if (R.phase === "count" || R.phase === "run") abortRun(); this.blur(); };
     $("rNext").onclick = function(){ setLevel(Math.min(levels.length - 1, R.lv + 1)); this.blur(); };
     var pad = $("rPad");
-    pad.addEventListener("pointerdown", function(ev){ ev.preventDefault(); try { pad.setPointerCapture(ev.pointerId); } catch (e) {} pad.classList.add("down"); if (R.phase === "ready") startRun(); else if (R.phase === "done") { /* the screen stays as it is until Start / Space */ } else tapDown("pointer", ev.timeStamp > 0 ? ev.timeStamp : performance.now()); });
+    pad.addEventListener("pointerdown", function(ev){ ev.preventDefault(); try { pad.setPointerCapture(ev.pointerId); } catch (e) {} pad.classList.add("down"); if (R.phase === "ready") startRun(); else if (R.phase === "done") { if (performance.now() - (R.doneAt || 0) > 1200) tryAgain(); } else tapDown("pointer", ev.timeStamp > 0 ? ev.timeStamp : performance.now()); });
     var padUp = function(ev){ pad.classList.remove("down"); tapUp("pointer", ev && ev.timeStamp > 0 ? ev.timeStamp : performance.now()); };
     pad.addEventListener("pointerup", padUp); pad.addEventListener("pointercancel", padUp);
     var kd = function(ev){
@@ -1290,18 +1295,23 @@
       var k = ev.key;
       if (ev.metaKey || ev.ctrlKey || ev.altKey || k === "Shift" || k === "Control" || k === "Alt" || k === "Meta" || k === "Tab" || /^F\d+$/.test(k) || k === "CapsLock") return;
       if (ev.target && /^(INPUT|TEXTAREA|SELECT)$/.test(ev.target.tagName) && k !== " ") return;
-      if (k === "n" || k === "N") return;   // N, Escape and Backspace are not rhythm keys
+      if (k === "Escape") return;   // Escape leaves full screen: it is not a rhythm key
       ev.preventDefault(); ev.stopPropagation();
-      if (k === "Escape" || k === "Backspace") { if (R.phase === "count" || R.phase === "run") abortRun(); return; }
+      if (k === "Backspace") { if (R.phase === "count" || R.phase === "run") abortRun(); return; }
+      if (k === "n" || k === "N") { if (!ev.repeat && (R.phase === "ready" || R.phase === "done") && R.lv > 0) newExercise(); return; }
       if (ev.repeat) return;
       var t = ev.timeStamp > 0 ? ev.timeStamp : performance.now();
-      if (R.phase === "ready") { if (k === " " || k === "Enter") startRun(); return; }
-      if (R.phase === "done") { if ((k === " " || k === "Enter") && performance.now() - (R.doneAt || 0) > 900) tryAgain(); return; }
+      if (R.phase === "ready") { startRun(); return; }
+      if (R.phase === "done") { if (performance.now() - (R.doneAt || 0) > 1200) tryAgain(); return; }
       tapDown(ev.code || k, t);
     };
     var ku = function(ev){ if (!host || host.getAttribute("data-game") !== "rhythm") return; ev.preventDefault(); ev.stopPropagation(); tapUp(ev.code || ev.key, ev.timeStamp > 0 ? ev.timeStamp : performance.now()); };
     window.addEventListener("keydown", kd, true); window.addEventListener("keyup", ku, true);
     cleanup = function(){ window.removeEventListener("keydown", kd, true); window.removeEventListener("keyup", ku, true); cancelAnimationFrame(raf); R = null; };
+    if (isTeacher()) { h.querySelector("#rTeach").style.display = ""; h.querySelector("#rResetLv").onclick = function(){ ls("rhythm-results", "{}"); drawLevels(); }; h.querySelector("#rResetOne").onclick = function(){ var rs = rResults(); delete rs[levels[R.lv].id]; ls("rhythm-results", JSON.stringify(rs)); drawLevels(); }; h.querySelector("#rClearOne").onclick = function(){ var rs = rResults(), id = levels[R.lv].id, r = rs[id] || (rs[id] = { tries: 0, passes: 0, best: null }); r.h2 = [2, 2, 2, 2, 2]; ls("rhythm-results", JSON.stringify(rs)); drawLevels(); }; }
+    var fsw = function(){ if (R && R.fs && !document.fullscreenElement && (R.phase === "count" || R.phase === "run")) abortRun(true); };
+    document.addEventListener("fullscreenchange", fsw);
+    var cl0 = cleanup; cleanup = function(){ document.removeEventListener("fullscreenchange", fsw); if (cl0) cl0(); };
     drawLevels(); setLevel(last, true);
   }
   function dotsHtml(lv){ var r = rResults()[lv.id], h = (r && r.h2 || []).slice(-5), o = '<span class="ssg-dots" title="Last 5 tries">'; for (var k = 0; k < 5; k++) { var v = h[k]; o += '<i class="' + (v === 2 ? "y" : v === 1 ? "o" : v === 0 ? "n" : "") + '"></i>'; } return o + '</span>'; }
@@ -1320,15 +1330,16 @@
     if (!first) drawLevels(); else drawLevels();
     newExercise();
   }
+  function setBtns(){ if (!host || !R) return; var act = R.phase === "count" || R.phase === "run"; host.querySelector("#rStop").disabled = !act; var nb = host.querySelector("#rNew"); nb.disabled = act; nb.style.display = R.lv > 0 ? "" : "none"; }
   function newExercise(){
     if (R.phase === "count" || R.phase === "run") abortRun();
     var lv = levels[R.lv], r = generateExercise(R.lv, { measures: Math.max(4, Number(lv.measures) || 4) });
     R.ex = r && r.ex ? r.ex : null; R.err = r && r.error || ""; if (R.ex && R.ex.ts && R.ex.ts.num === 4 && R.ex.ts.den === 4) { R.tempo = 60; host.querySelector("#rTempo").textContent = 60; } else { R.tempo = lv.tempo || 72; host.querySelector("#rTempo").textContent = R.tempo; }
     R.phase = "ready"; R.taps = []; R.held = {}; R.tries = 0;
-    host.querySelector("#rTitle").innerHTML = '<b>Level ' + (R.lv + 1) + ': ' + esc(lv.name) + '</b>' + (lv.teach ? ' &mdash; ' + esc(lv.teach) : "");
+    host.querySelector("#rTitle").innerHTML = '<b>Level ' + (R.lv + 1) + ': ' + esc(lv.name) + '</b>' + "";
     if (!R.ex) { host.querySelector("#rStaff").innerHTML = '<div class="ssg-sub">Could not make a rhythm for this level (' + esc(R.err) + ').</div>'; return; }
     evt("ss-question", { title: "Rhythm: " + lv.name, mode: "practice" });
-    drawStaff(); showReady();
+    R.colors = null; R.restColors = null; drawStaff(); showReady(); setBtns();
   }
   function showReady(){
     var h = host; if (!h || !R || !R.ex) return;
@@ -1376,6 +1387,7 @@
         var d = DURV[p.ticks], note;
         if (fullRest) note = new VF.StaveNote({ keys: ["b/4"], duration: "wr", alignCenter: true });
         else { note = new VF.StaveNote({ keys: ["b/4"], duration: d.d + (p.rest ? "r" : ""), dots: d.dots, stemDirection: 1 }); if (d.dots) VF.Dot.buildAndAttach([note], { all: true }); }
+        var cc = p.rest ? (R.restColors && R.restColors[absBase + p.pos]) : (R.colors && R.colors[absBase + p.pos]); if (cc) { try { note.setStyle({ fillStyle: cc, strokeStyle: cc }); if (note.setStemStyle) note.setStemStyle({ fillStyle: cc, strokeStyle: cc }); if (note.setFlagStyle) note.setFlagStyle({ fillStyle: cc, strokeStyle: cc }); } catch (e) {} }
         notes.push(note); refs.push({ part: p, note: note, abs: absBase + p.pos, y: y, m: mi, cx: 0 });
       });
       var voice = new VF.Voice({ numBeats: T.num, beatValue: T.den }).setMode(VF.Voice.Mode.SOFT); voice.addTickables(notes);
@@ -1422,6 +1434,7 @@
     var lane = host.querySelector("#rLane"), T = R.ex.ts, s = laneSpan(), E = expectedEvents(); R.E = E;
     var h = R.reveal ? '<div class="cin" style="left:0;width:' + lx(0) + '%"></div>' : "";
     if (R.reveal) for (var t = s.min; t <= s.max; t += T.beat) h += '<div class="bl' + ((t % T.ticks === 0) ? " ml" : "") + '" style="left:' + lx(t) + '%"></div>';
+    if (!R.reveal) h += '<div class="nowbox" id="rNow">playing</div>';
     if (R.reveal) E.rests.forEach(function(r){ h += '<div class="ex rest" style="left:' + lx(r.abs) + '%;width:' + (r.ticks / (s.max - s.min) * 100) + '%"></div>'; });
     if (R.reveal) E.evs.forEach(function(e, i){ h += '<div class="ex" id="rEx' + i + '" style="left:' + lx(e.abs) + '%;width:' + (e.ticks / (s.max - s.min) * 100) + '%"></div>'; });
     if (R.reveal) h += '<div class="lab" style="left:' + lx(-T.ticks / 2) + '%">count-in</div>';
@@ -1431,9 +1444,10 @@
   // ---- the run ----
   function startRun(){
     if (!R || !R.ex || R.phase === "count" || R.phase === "run") return;
-    if (R.needNew) { R.needNew = false; newExercise(); }   // you got the last one: a fresh rhythm
+    if (R.needNew && R.lv > 0) { R.needNew = false; newExercise(); } else R.needNew = false;   // you got the last one: a fresh rhythm
     var c = audio(); if (!c) { host.querySelector("#rMsg").textContent = "This computer cannot play sound here."; return; }
-    var T = R.ex.ts; R.tickMs = tickMsOf(T, R.tempo); R.taps = []; R.held = {}; R.tries++; R.reveal = false;
+    var T = R.ex.ts; R.tickMs = tickMsOf(T, R.tempo); R.taps = []; R.held = {}; R.tries++; R.reveal = false; R.fs = !!document.fullscreenElement; R.followUsed = !!R.follow; R.colors = null; R.restColors = null;
+    if (R.hadResult) { drawStaff(); R.hadResult = false; }
     drawLane();
     var a0 = c.currentTime + 0.25, perfA0;
     try { var ts = c.getOutputTimestamp && c.getOutputTimestamp(); if (ts && ts.contextTime > 0 && ts.performanceTime > 0) perfA0 = ts.performanceTime + (a0 - ts.contextTime) * 1000; } catch (e) {}
@@ -1441,13 +1455,13 @@
     R.w0 = perfA0 + T.ticks * R.tickMs;   // when tick 0 (the first note) is heard
     var total = R.ex.measures.length * T.ticks, cstep = T.compound ? 2 : 4, bstep = T.beat, ms = R.tickMs / 1000;
     R.tokens = countTokens(T);
-    R.tokens.forEach(function(t, k){ blip(a0 + t.tick * ms, (k === 0 || (T.compound && t.tick % 6 === 0)) ? 1500 : 1000, 0.07, 0.3, "square"); });
-    for (var y = 0; y < total; y += bstep) blip(a0 + (y + T.ticks) * ms, (y % T.ticks === 0) ? 1500 : 1000, 0.06, 0.2, "square");
+    R.tokens.forEach(function(t, k){ blip(a0 + t.tick * ms, (k === 0 || (T.compound && t.tick % 6 === 0)) ? 1500 : 1000, 0.07, 0.6, "square"); });
+    for (var y = 0; y < total; y += bstep) blip(a0 + (y + T.ticks) * ms, (y % T.ticks === 0) ? 1500 : 1000, 0.06, 0.45, "square");
     R.endTick = total + T.beat; R.phase = "count"; R.lastCount = -2;
     var h = host; h.querySelector("#rMsg").textContent = ""; h.querySelector("#rDet").textContent = "";
     h.querySelector("#rStart").style.display = "none"; h.querySelector("#rAgain").style.display = "none"; h.querySelector("#rNext").style.display = "none";
     var ph = R.geo.ph; ph.setAttribute("visibility", "hidden"); 
-    cancelAnimationFrame(raf); raf = requestAnimationFrame(frame);
+    setBtns(); cancelAnimationFrame(raf); raf = requestAnimationFrame(frame);
   }
   function frame(){
     if (!R || (R.phase !== "count" && R.phase !== "run")) return;
@@ -1456,8 +1470,9 @@
     var cstep = T.compound ? 2 : 4;
     if (tick < 0) { var ci = -1, el0 = tick + T.ticks; R.tokens.forEach(function(t, k){ if (el0 >= t.tick) ci = k; }); if (ci !== R.lastCount && ci >= 0) { R.lastCount = ci; drawCount(ci); } }
     else if (R.lastCount !== -1) { R.lastCount = -1; drawCount(-1); }
+    if (R.follow) R.followUsed = true;
+    if (!R.follow || tick < 0 || tick > R.geo.total) R.geo.ph.setAttribute("visibility", "hidden");
     if (R.follow && tick >= 0 && tick <= R.geo.total) { var p = R.geo.posAt(tick); R.geo.ph.setAttribute("x1", p.x); R.geo.ph.setAttribute("x2", p.x); R.geo.ph.setAttribute("y1", p.y + 2); R.geo.ph.setAttribute("y2", p.y + 66); R.geo.ph.setAttribute("visibility", "visible"); }
-    Object.keys(R.held).forEach(function(k){ var tp = R.held[k]; if (tp && tp.el) tp.el.style.width = Math.max(0.4, lx(tick) - lx(tp.tick)) + "%"; });
     if (tick >= R.endTick) { finishRun(); return; }
     raf = requestAnimationFrame(frame);
   }
@@ -1465,21 +1480,21 @@
     if (!R || (R.phase !== "count" && R.phase !== "run")) return;
     if (R.held[code]) return;
     var T = R.ex.ts, tick = (t - R.w0) / R.tickMs, tp = { down: t, up: null, code: code, tick: tick };
-    toneOn("r:" + code, 523.25, 0.3, "piano");
-    var el = document.createElement("div"); el.className = "ac"; el.style.left = lx(tick) + "%"; el.style.width = "0.4%"; tp.el = el; host.querySelector("#rLane").appendChild(el);
-    R.held[code] = tp;
+    toneOn("r:" + code, 261.63, 0.16, "mellow");
+    R.held[code] = tp; var nb = host.querySelector("#rNow"); if (nb) nb.classList.add("on");
     if (R.phase === "run" || tick > -T.beat * 0.5) R.taps.push(tp); else { tp.count = true; }
   }
   function tapUp(code, t){
     toneOff("r:" + code);
     if (!R) return; var tp = R.held[code]; if (!tp) return;
     delete R.held[code]; tp.up = t;
-    if (tp.el) { var tk = (t - R.w0) / R.tickMs; tp.el.style.width = Math.max(0.4, lx(tk) - lx(tp.tick)) + "%"; }
+    if (!Object.keys(R.held).length) { var nb = host.querySelector("#rNow"); if (nb) nb.classList.remove("on"); }
   }
-  function abortRun(){   // Escape / Backspace: stop here; what you played so far is scored as it is, and the same rhythm stays up
+  function abortRun(noScore){   // Backspace: stop here, what you played so far is scored as it is. Leaving full screen: just stop.
     if (!R) return;
-    if (R.phase === "run" && R.taps.length) { finishRun(); return; }
-    cancelAnimationFrame(raf); toneAll(); R.phase = "ready"; R.held = {}; var h = host; if (h) { showReady(); h.querySelector("#rMsg").textContent = "Stopped. Press Space to start again."; }
+    cancelAnimationFrame(raf); toneAll(); stopSched();
+    if (!noScore && R.phase === "run" && R.taps.length) { finishRun(); return; }
+    R.phase = "ready"; R.held = {}; var h = host; if (h) { showReady(); h.querySelector("#rMsg").textContent = noScore ? "The try ended because the screen left full screen." : "Stopped."; setBtns(); }
   }
   function tryAgain(){ if (!R || !R.ex) return; R.phase = "ready"; startRun(); }
 
@@ -1496,6 +1511,7 @@
       if (best >= 0 && bd <= close) {
         used[best] = true; var tp = taps[best], dt = tp.down - exp; r.dt = Math.round(dt); dts.push(dt);
         if (bd <= good) { r.onset = "good"; pts += 1; onOk++; } else { r.onset = "close"; pts += 0.5; }
+        r.de = Math.round((tp.up == null ? (R.w0 + R.endTick * tm) : tp.up) - (exp + e.ticks * tm));
         if (e.ticks >= J0.holdMin || e.gapNext) {
           total += 1; holdN++;
           var up = tp.up == null ? (R.w0 + R.endTick * tm) : tp.up, expEnd = exp + e.ticks * tm, tol = Math.max(J0.holdTolMs, J0.holdTolPct / 100 * e.ticks * tm), dd = up - expEnd, ok2 = Math.abs(dd) <= tol;
@@ -1512,34 +1528,42 @@
     return { res: res, ratio: ratio, pass: ratio >= J0.pass, onN: onN, onOk: onOk, holdN: holdN, holdOk: holdOk, extra: extra, avg: Math.round(avg), matched: dts.length };
   }
   function finishRun(){
-    cancelAnimationFrame(raf); toneAll(); if (!R) return;
+    cancelAnimationFrame(raf); toneAll(); stopSched(); if (!R) return;
     Object.keys(R.held).forEach(function(k){ tapUp(k, performance.now()); });
     R.phase = "done"; R.doneAt = performance.now(); var S = score(), h = host, lv = levels[R.lv]; R.needNew = !!S.pass;
+    var teacher = isTeacher(), COL = { good: "#1a8a4a", close: "#d89a00", miss: "#c0392b" };
+    R.colors = {}; R.restColors = {};
+    S.res.forEach(function(r){ var e = R.E.evs[r.i], k = r.onset === "good" && (r.hold === "good" || r.hold === "na") ? "good" : r.onset === "miss" ? "miss" : "close"; r.k = k; R.colors[e.abs] = COL[k]; });
+    R.E.rests.forEach(function(rs){ var bad = R.taps.some(function(tp){ if (tp.count) return false; var tk = (tp.down - R.w0) / R.tickMs; return tp.extra && tk >= rs.abs - 0.5 && tk < rs.abs + rs.ticks - 0.5; }); R.restColors[rs.abs] = bad ? COL.miss : COL.good; });
+    R.hadResult = true; drawStaff();   // the written notes and rests turn green / yellow / red
     R.reveal = true; drawLane();   // only now do the boxes (what you should have played) and the bars (what you played) appear
     var lane = h.querySelector("#rLane");
     R.taps.forEach(function(tp){ var t0 = (tp.down - R.w0) / R.tickMs, t1 = ((tp.up == null ? tp.down + 80 : tp.up) - R.w0) / R.tickMs, el = document.createElement("div"); el.className = "ac" + (tp.extra ? " extra" : ""); el.style.left = lx(t0) + "%"; el.style.width = Math.max(0.4, lx(t1) - lx(t0)) + "%"; lane.appendChild(el); });
     S.res.forEach(function(r){
       var el = h.querySelector("#rEx" + r.i); if (!el) return;
-      el.classList.add(r.onset === "good" && (r.hold === "good" || r.hold === "na") ? "good" : r.onset === "miss" ? "miss" : "close");
-      el.textContent = r.onset === "miss" ? "missed" : (r.dt > 0 ? "+" : "") + r.dt + (r.hold === "short" ? " short" : r.hold === "long" ? " long" : "");
+      el.classList.add(r.k);
+      var words = r.onset === "miss" ? ["missed"] : [r.onset === "close" ? (r.dt < 0 ? "early start" : "late start") : "", r.hold === "short" ? "let go early" : r.hold === "long" ? "held long" : ""].filter(Boolean);
+      el.textContent = teacher && r.dt != null ? "start " + (r.dt > 0 ? "+" : "") + r.dt + " end " + (r.de > 0 ? "+" : "") + r.de : (words.length ? words.join(", ") : "\u2713");
       el.title = "Start: " + (r.dt == null ? "missed" : (r.dt > 0 ? r.dt + " ms late" : (-r.dt) + " ms early")) + (r.hold === "na" ? "" : "; end: " + (r.hold === "good" ? "good" : r.hold === "short" ? "you let go too early" : "you held too long"));
     });
     var pct = Math.round(S.ratio * 100);
-    h.querySelector("#rMsg").innerHTML = S.pass ? '<span class="big okc">Got it! ' + pct + '%</span>' + (R.follow ? '<div class="nocount">This try did NOT count: the follower line is on. Turn it off (top of the game) so the try counts toward the next level.</div>' : (cleared(lv) ? ' <b>Level cleared!</b>' : "")) : '<span class="big no">Not yet. ' + pct + '%</span>' + (R.follow ? '<div class="nocount">The follower line is on, so this try would not count anyway.</div>' : "");
+    h.querySelector("#rMsg").innerHTML = S.pass ? '<span class="big okc">Got it! ' + pct + '%</span>' + (R.followUsed ? '<div class="nocount">THIS TRY DID NOT COUNT. The follower line was on. Turn it off (the box at the top) to count toward the next level.</div>' : (cleared(lv) ? ' <b>Level cleared!</b>' : "")) : '<span class="big no">Not yet. ' + pct + '%</span>' + (R.followUsed ? '<div class="nocount">THIS TRY DID NOT COUNT. The follower line was on.</div>' : "");
     var bits = ["Notes started on time: <b>" + S.onOk + " of " + S.onN + "</b>"];
     if (S.holdN) bits.push("Long notes held the right length: <b>" + S.holdOk + " of " + S.holdN + "</b>");
     if (S.extra) bits.push("Extra taps: <b>" + S.extra + "</b>");
     if (S.matched >= 3 && Math.abs(S.avg) >= 40) bits.push("You tapped about <b>" + Math.abs(S.avg) + " ms " + (S.avg > 0 ? "late" : "early") + "</b> on average" + (Math.abs(S.avg) >= 70 ? " (the Sync buttons at the top can shift the timing if your keyboard is slow)" : ""));
     h.querySelector("#rDet").innerHTML = bits.join("<br>");
     var res = rResults(), r = res[lv.id] || (res[lv.id] = { tries: 0, passes: 0, best: null });
-    r.tries++; if (S.pass) r.passes++; if (!R.follow) { r.h2 = (r.h2 || []).concat(S.pass ? 2 : (S.ratio >= J().yellow ? 1 : 0)).slice(-20); } if (r.best == null || S.ratio > r.best) r.best = S.ratio; ls("rhythm-results", JSON.stringify(res));
+    r.tries++; if (S.pass) r.passes++; if (!R.followUsed) { r.h2 = (r.h2 || []).concat(S.pass ? 2 : (S.ratio >= J().yellow ? 1 : 0)).slice(-20); } if (r.best == null || S.ratio > r.best) r.best = S.ratio; ls("rhythm-results", JSON.stringify(res));
     evt("ss-attempt", { title: "Rhythm: " + lv.name, mode: "practice", ok: S.pass });
     h.querySelector("#rStart").style.display = "none"; h.querySelector("#rAgain").style.display = ""; h.querySelector("#rNext").style.display = (R.lv < levels.length - 1 && allowedLevel(R.lv + 1)) ? "" : "none";
+    if (S.matched >= 3 && Math.abs(S.avg) >= 15) { R.sync = Math.max(-250, Math.min(250, R.sync + Math.round(S.avg * 0.3))); ls("rhythm-sync", String(R.sync)); var sd = h.querySelector("#rSync"); if (sd) sd.textContent = (R.sync > 0 ? "+" : "") + R.sync; }   // timing adjusts by itself
+    setBtns();
     drawLevels();
     if (PREVIEWISH || (window.ssIsTester && window.ssIsTester())) {
       var mk = document.createElement("div"); mk.className = "ssg-btns"; mk.innerHTML = '<span class="ssg-sub">Teacher: was this fair?</span><button type="button" class="ssg-btn sm" data-mk="1">Count as right</button><button type="button" class="ssg-btn sm" data-mk="0">Count as wrong</button><span class="ssg-sub" id="rMkMsg"></span>';
       h.querySelector("#rDet").appendChild(mk);
-      [].forEach.call(mk.querySelectorAll("[data-mk]"), function(b){ b.onclick = function(){ var v = +b.getAttribute("data-mk"), rs = rResults(), rr = rs[lv.id]; if (rr && rr.h2 && rr.h2.length && !R.follow) { rr.h2[rr.h2.length - 1] = v ? 2 : 0; ls("rhythm-results", JSON.stringify(rs)); drawLevels(); mk.querySelector("#rMkMsg").textContent = "Marked " + (v ? "right" : "wrong") + "."; } else mk.querySelector("#rMkMsg").textContent = "Only tries with the follower line off are recorded."; }; });
+      [].forEach.call(mk.querySelectorAll("[data-mk]"), function(b){ b.onclick = function(){ var v = +b.getAttribute("data-mk"), rs = rResults(), rr = rs[lv.id]; if (rr && rr.h2 && rr.h2.length && !R.followUsed) { rr.h2[rr.h2.length - 1] = v ? 2 : 0; ls("rhythm-results", JSON.stringify(rs)); drawLevels(); mk.querySelector("#rMkMsg").textContent = "Marked " + (v ? "right" : "wrong") + "."; } else mk.querySelector("#rMkMsg").textContent = "Only tries with the follower line off are recorded."; }; });
     }
     var ph = h.querySelector("#rPh"); if (ph) ph.style.display = "none"; R.geo.ph.setAttribute("visibility", "hidden"); drawCount(-1);
   }
@@ -1590,7 +1614,7 @@
     var ku = function(ev){ if (!host || host.getAttribute("data-game") !== "songs") return; var m = SG.down[ev.code]; if (m == null) return; ev.preventDefault(); ev.stopPropagation(); delete SG.down[ev.code]; release(m, "k:" + ev.code); };
     window.addEventListener("keydown", kd, true); window.addEventListener("keyup", ku, true);
     cleanup = function(){ window.removeEventListener("keydown", kd, true); window.removeEventListener("keyup", ku, true); try { if (SG && SG.midi) SG.midi.inputs.forEach(function(i){ i.onmidimessage = null; }); } catch (e) {} SG = null; };
-    setupMidi();
+    // MIDI is off for now (no permission pop-up for students); setupMidi() is kept for later
     var last = Number(lg("songs-last") || 0); if (!(last >= 0 && last < list.length)) last = 0;
     pickSong(list[last], last);
   }

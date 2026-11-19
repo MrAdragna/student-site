@@ -5,7 +5,8 @@
   "use strict";
   window.STUDENT_SITE = true;
   window.DataStore = { supported: function(){ return false; }, reconnectSilently: function(){ return Promise.resolve(null); } };   // NoteID's folder storage is never used here
-  var PREVIEW = !!window.STUDENT_PREVIEW || /[?&]preview=1/.test(location.search);
+  var LIVETEST = /[?&]livetest=1/.test(location.search);   // X114: the real published settings, but a test student (no name asked, nothing counted)
+  var PREVIEW = !!window.STUDENT_PREVIEW || /[?&]preview=1/.test(location.search) || LIVETEST;
   var CLASS_MODE = /[?&]class=1/.test(location.search);
   var PREFIX = "ss:" + (PREVIEW ? "p:" : "") + (function(){ var d = location.pathname.replace(/[^\/]*$/, ""); return d && d !== "/" ? d + ":" : ""; })();   // X95: two sites under one domain (/piano/, /theory/) keep separate saved data
   window.SS_PREFIX = PREFIX;
@@ -14,7 +15,7 @@
   window.STUDENT_READY = new Promise(function(r){ resolveReady = r; });
   function setConfig(c){ cfg = c || { v: 1, empty: true }; window.STUDENT_CONFIG = cfg; resolveReady(cfg); }
   if (window.STUDENT_CONFIG_INLINE) setConfig(window.STUDENT_CONFIG_INLINE);
-  else if (PREVIEW) {   // the teacher's panel hands over the settings it is previewing
+  else if (PREVIEW && !LIVETEST) {   // the teacher's panel hands over the settings it is previewing
     window.addEventListener("message", function(ev){ if (ev.data && ev.data.type === "site-config-preview" && !cfg) setConfig(ev.data.config); });
     var askTimer = setInterval(function(){ if (cfg) { clearInterval(askTimer); return; } try { window.parent.postMessage({ type: "student-site-ready" }, "*"); } catch (e) {} }, 300);
   }

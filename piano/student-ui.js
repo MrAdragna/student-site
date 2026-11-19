@@ -2,7 +2,7 @@
    session timer, the "show my session" screen, today's focus message, and the teacher-only controls blocked. */
 (function(){
   "use strict";
-  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X108b";   // X101 (c13): failing class tests need no PIN; a test cut off by the end of class is saved as a practice test with the score so far
+  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X109";   // X101 (c13): failing class tests need no PIN; a test cut off by the end of class is saved as a practice test with the score so far
   function lg(k){ try { return localStorage.getItem(P + k); } catch (e) { return null; } }
   function ls(k, v){ try { localStorage.setItem(P + k, v); } catch (e) {} }
   function jget(k, d){ try { var v = JSON.parse(lg(k)); return v == null ? d : v; } catch (e) { return d; } }
@@ -47,6 +47,8 @@
       ".ss-tbl tr.tst td { background: #fff1d6; } .ss-warn { background: #fde2e0; color: #8a1c14; border-radius: 6px; padding: 3px 8px; font-size: 12px; font-weight: 700; margin-bottom: 4px; } .ss-warn2 { color: #8a1c14; font-weight: 700; }" +
       ".ss-h { border: 1px solid #ddd; border-radius: 8px; margin-bottom: 5px; padding: 3px 8px; font-size: 12.5px; } .ss-h summary { cursor: pointer; } .ss-hl { color: #555; font-size: 11.5px; margin: 4px 0; }" +
       ".ss-top { flex: 0 0 auto; display: flex; flex-direction: column; gap: 8px; } .ss-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 2px; }" +
+      ".ss-ov.pair .ss-card { width: auto; max-width: 92vw; min-height: 40vh; padding: 5vh min(7vh, 4vw); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; } .ss-ov.pair .ss-card * { text-align: center; } .ss-ov.pair h2 { font-size: 4.2vh; margin: 0; } .ss-ov.pair .ss-pc { font: 800 min(15vh, 14vw)/1.1 ui-monospace, Menlo, monospace; letter-spacing: .04em; white-space: nowrap; margin: 1.5vh 0; } .ss-ov.pair p { font-size: 3vh; margin: 0; }" +
+      ".ss-pvx { position: absolute; top: 8px; right: 8px; font: 12px system-ui; border: 1px dashed #888; background: #fff; color: #444; border-radius: 6px; padding: 2px 8px; cursor: pointer; } @keyframes ssPulse { 0%, 100% { outline-color: rgba(233,163,26,0); } 50% { outline-color: #e9a31a; } } .ss-pulse { outline: 5px solid #e9a31a; outline-offset: 3px; animation: ssPulse .7s ease-in-out 4; border-radius: 10px; }" +
       ".ss-ov.still .ss-card, .ss-ov.still .ss-card * { text-align: center; } .ss-ov.still .ss-btns { justify-content: center; } .ss-ov.still .ss-card { display: flex; flex-direction: column; align-items: center; }" +
       ".ss-who { text-align: center; } .ss-psub { text-align: center; }" +
       ".ss-pmin b.g { color: #1a8a4a; } .ss-pmin b.y { color: #c98a00; } .ss-pmin b.r { color: #c0392b; } .ss-pst.g { color: #1a8a4a; } .ss-pst.y { color: #c98a00; } .ss-pst.r { color: #c0392b; }" +
@@ -186,7 +188,7 @@
   // X102: what the optional cloud ping (student-cloud.js) may report: no name, just the state of this device
   window.ssStatus = function(){
     var g = (sess && sess.games) || {}, r = 0, w = 0, a = 0; Object.keys(g).forEach(function(k){ r += g[k].right || 0; w += g[k].wrong || 0; a += g[k].sec || 0; });
-    return { inClass: inClass(), preview: PREVIEWISH, playing: playing(), state: prevState, game: curQ && curQ.title || "", mode: curQ && curQ.mode || "", right: r, wrong: w, active: Math.round(a), name: me ? me.name : "" };
+    return { inClass: inClass(), preview: PREVIEWISH, playing: playing(), state: prevState, game: curQ && curQ.title || "", mode: curQ && curQ.mode || "", right: r, wrong: w, active: Math.round(a), act: lastAct, name: me ? me.name : "" };
   };
 
   // "Still practicing?" after a stretch with no mouse / keyboard: the timer is paused until the student taps the button
@@ -330,7 +332,7 @@
   }
   window.ssMsgsHtml = function(){
     var list = cfg.messages && cfg.messages.length ? cfg.messages : (cfg.today ? [{ html: esc(cfg.today), color: "#2fb067" }] : []);
-    return list.map(function(m){ var c = /^#[0-9a-f]{6}$/i.test(m.color) ? m.color : "#3a2f8f"; return '<div class="ss-msg" style="--mc:' + c + '"><div class="ss-mi">' + cleanHtml(m.html) + '</div></div>'; }).join("");
+    return list.map(function(m, ix){ var c = /^#[0-9a-f]{6}$/i.test(m.color) ? m.color : "#3a2f8f"; return '<div class="ss-msg" data-mi="' + (m.i != null ? m.i : ix) + '" style="--mc:' + c + '"><div class="ss-mi">' + cleanHtml(m.html) + '</div></div>'; }).join("");
   };
   function fillMsgs(){ var e = document.getElementById("ssMsgs"); if (e) e.innerHTML = window.ssMsgsHtml(); }
   // ---- if the game would push off the screen, the whole page is scaled down to fit (no scrolling) ----
@@ -364,7 +366,7 @@
     var host = document.getElementById("ssBar"); if (!host) return;
     if (!me) { host.innerHTML = ""; return; }
     var side = host.querySelector(".ss-scroll"), keep = side ? side.scrollTop : 0, openIds = [].map.call(host.querySelectorAll("details[open]"), function(e){ return e.getAttribute("data-sid"); });
-    var code = cfg.secret ? window.ssDailyCode(cfg.secret, dstr()) : "";
+    var dcode = window.ssDeviceCode ? window.ssDeviceCode() : "";   // X109: the sidebar shows this Chromebook's device code where the code of the day used to be
     host.innerHTML = '<div class="ss-side"><div class="ss-top"><div class="ss-who"><div class="ss-pname">' + esc(me.name) + '</div><div class="ss-psub">' + (me.borrowed ? "Borrowing " + esc(me.owner) + "'s Chromebook<br>" : "") + '<span id="ssPsub2" style="color:#3a2f8f"></span></div></div>' +
       '<div class="ss-pmin"><b id="ssMin" class="y">0:00</b><span><i class="dot a"></i>active in games this session</span><span class="ss-pst" id="ssState">not counting</span></div>' +
       '<div class="ss-seg" id="ssSeg"><i class="a"></i><i class="i"></i><i class="o"></i></div>' +
@@ -374,7 +376,7 @@
       '<div class="ss-fs out" id="ssFs"></div></div>' +
       '<div class="ss-scroll"><div class="ss-sec">This session <span id="ssCurBadge"></span></div><div class="ss-pmore" id="ssMore"></div><div id="ssCur"></div>' +
       '<div class="ss-sec">Earlier sessions</div><div id="ssHist">' + histHtml() + '</div>' +
-      (code ? '<div class="ss-code">Code of the day <b>' + code + '</b></div>' : "") +
+      (dcode ? '<div class="ss-code">Device code <b>' + dcode + '</b></div>' : "") +
       '<button type="button" class="ss-pb" id="ssTeach" title="teacher">teacher &middot; site X99b</button></div></div>';
     [].forEach.call(host.querySelectorAll("details"), function(e){ if (openIds.indexOf(e.getAttribute("data-sid")) >= 0) e.open = true; });
     document.getElementById("ssTeach").onclick = function(){ teacherGate(whoMenu); };
@@ -469,6 +471,7 @@
 
   function overlay(html, cls){
     var o = document.createElement("div"); o.className = "ss-ov " + (cls || ""); o.innerHTML = '<div class="ss-card">' + html + '</div>'; document.body.appendChild(o);
+    if (PREVIEWISH) { var xb = document.createElement("button"); xb.type = "button"; xb.className = "ss-pvx"; xb.textContent = "Close (preview only)"; xb.onclick = function(){ o.remove(); }; o.appendChild(xb); }   // X109: in the teacher's preview every box can be closed; the real student page never gets this button
     return o;
   }
   function askName(first){
@@ -519,8 +522,8 @@
   var holdOv = null, pairOv = null;
   function skipPair(){ return !!jget("nopair:" + dstr(), false); }
   function showPair(code){   // X108: the code is large, and it is shown by the page itself the moment it opens (no wait for the first answer from the service)
-    if (pairOv) return;
-    pairOv = overlay('<h2>Your device code</h2><div style="font:800 min(96px,16vw)/1.1 ui-monospace,Menlo,monospace;letter-spacing:.04em;white-space:nowrap;margin:.1em 0">' + esc(String(code || "")) + '</div><p>Show this code to your teacher.</p>' +
+    if (pairOv && pairOv.isConnected) return;
+    pairOv = overlay('<h2>Your device code</h2><div class="ss-pc">' + esc(String(code || "")) + '</div><p>Show this code to your teacher.</p>' +
       ((cfg.pairing && cfg.pairing.skip === false) ? "" : '<div style="margin-top:26px"><a href="#" id="ssNoPair" style="font-size:12px;color:#888;text-decoration:underline;opacity:.7">Start without pairing</a></div>'), "gate pair");
     var np = pairOv.querySelector("#ssNoPair"); if (np) np.onclick = function(e){ e.preventDefault(); ls("nopair:" + dstr(), "true"); if (pairOv) { pairOv.remove(); pairOv = null; } };
   }
@@ -543,6 +546,35 @@
     cfg.paused = true; cfg.pausedMsg = n.pausedMsg;
     overlay('<h2>The games are paused</h2><p>' + esc(n.pausedMsg || "Your teacher has paused the site. Look at the classroom screen for what to do.") + '</p>', "gate");
   });
+  // X109: click-to-inspect. Only inside the teacher's preview (the panel's iframe): a click on a game button, a message or a box tells the panel what was clicked, and the panel can ask this page to pulse-highlight something or show a box.
+  if (PREVIEWISH && window.parent && window.parent !== window) {
+    var tell = function(o){ try { window.parent.postMessage(Object.assign({ type: "ss-inspect" }, o), "*"); } catch (e) {} };
+    document.addEventListener("click", function(ev){
+      var t = ev.target; if (!t || !t.closest) return;
+      var ovl = t.closest(".ss-ov");
+      if (ovl) { if (t.closest(".ss-pvx")) return; var h = (ovl.querySelector("h2") || {}).textContent || ""; tell({ kind: "page", id: /pair/.test(ovl.className) ? "pair" : /still/.test(ovl.className) ? "still" : /paused/i.test(h) ? "paused" : /PIN/.test(h) ? "pin" : /Chromebook/.test(h) ? "name" : "" }); return; }
+      var g = t.closest('[data-action="hub-type"]'); if (g) { tell({ kind: "game", id: g.getAttribute("data-type") }); return; }
+      var m = t.closest(".ss-msg"); if (m) { tell({ kind: "msg", i: +m.getAttribute("data-mi") }); return; }
+      if (t.closest(".ss-msgs")) tell({ kind: "msgs" });
+    }, true);
+    window.addEventListener("message", function(ev){
+      var d = ev.data; if (!d || ev.source !== window.parent) return;
+      if (d.type === "ss-focus") {
+        var el = d.kind === "game" ? document.querySelector('[data-action="hub-type"][data-type="' + String(d.id).replace(/"/g, "") + '"]') : d.kind === "msg" ? document.querySelector('.ss-msg[data-mi="' + (+d.i) + '"]') : d.kind === "msgs" ? document.querySelector(".ss-msgs") : null;
+        if (!el) return; try { el.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (e) {}
+        el.classList.remove("ss-pulse"); void el.offsetWidth; el.classList.add("ss-pulse"); setTimeout(function(){ el.classList.remove("ss-pulse"); }, 3200);
+      } else if (d.type === "ss-show") {
+        [].forEach.call(document.querySelectorAll(".ss-ov"), function(o){ o.remove(); }); pairOv = null;
+        try {
+          if (d.page === "pair") showPair((window.ssDeviceCode && window.ssDeviceCode()) || "a1b2c3");
+          else if (d.page === "paused") overlay('<h2>The games are paused</h2><p>' + esc(d.msg || "Your teacher has paused the site. Look at the classroom screen for what to do.") + '</p>', "gate");
+          else if (d.page === "name") askName(true);
+          else if (d.page === "still") showStill();
+          else if (d.page === "pin") pinPrompt({ title: "Teacher PIN", okLabel: "Go", cancelLabel: "Cancel" });
+        } catch (e) {}
+      }
+    });
+  }
   window.STUDENT_READY.then(function(c){ if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function(){ init(c); }); else init(c); });
 })();
 

@@ -1,8 +1,8 @@
-/* student-ui.js (Student site v1, X99, 16 Nov 2026, c12). Loaded AFTER NoteID.js. Student identity (locked to the Chromebook's owner, borrowing),
+/* student-ui.js (X110, c13: device code stays at the bottom of the side panel; teacher PIN test-computer option on the pairing box; stale "paired" memory no longer hides the code; loads student-games.js (Rhythm and Songs games); X109: device code box; quiet check-ins) (Student site v1, X99, 16 Nov 2026, c12). Loaded AFTER NoteID.js. Student identity (locked to the Chromebook's owner, borrowing),
    session timer, the "show my session" screen, today's focus message, and the teacher-only controls blocked. */
 (function(){
   "use strict";
-  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X109";   // X101 (c13): failing class tests need no PIN; a test cut off by the end of class is saved as a practice test with the score so far
+  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X110";   // X101 (c13): failing class tests need no PIN; a test cut off by the end of class is saved as a practice test with the score so far
   function lg(k){ try { return localStorage.getItem(P + k); } catch (e) { return null; } }
   function ls(k, v){ try { localStorage.setItem(P + k, v); } catch (e) {} }
   function jget(k, d){ try { var v = JSON.parse(lg(k)); return v == null ? d : v; } catch (e) { return d; } }
@@ -35,7 +35,7 @@
       ".ss-fs b { display: block; font-size: 34px; font-weight: 800; } .ss-fs span { font-size: 12px; font-weight: 700; opacity: .95; } .ss-fs small { display: block; margin-top: 3px; font-size: 11px; opacity: .85; }" +
       ".ss-pmore { font-size: 12.5px; color: #444; line-height: 1.5; } .ss-pmore b { color: #2a2170; }" +
       ".ss-side .ss-tbl { font-size: 12px; margin: 0; } .ss-side .ss-tbl th { font-size: 10.5px; line-height: 1.1; } .ss-side .ss-tbl th, .ss-side .ss-tbl td { padding: 3px 3px; }" +
-      ".ss-side .ss-code { margin-top: auto; padding: 5px; text-align: center; } .ss-side .ss-code b { font-size: 26px; letter-spacing: 4px; }" +
+      ".ss-side .ss-code { flex: 0 0 auto; margin: 0; padding: 5px; text-align: center; border: 3px dashed #3a2f8f; border-radius: 12px; background: #fff; } .ss-side .ss-code b { font-size: 26px; letter-spacing: 4px; margin-left: 6px; }" +
       ".ss-pb { align-self: flex-end; font: inherit; font-size: 11px; font-weight: 700; border: 0; background: none; color: #aaa; cursor: pointer; padding: 0; }" +
       ".ss-qs { display: block; font-size: 12px; font-weight: 700; color: #555; margin-top: 2px; } .ss-qs.slow { color: #b7791f; }" +
       ".ss-seg { display: flex; height: 10px; border-radius: 6px; overflow: hidden; background: #eee; } .ss-seg i { display: block; height: 100%; } .ss-seg .a, .dot.a { background: #3a2f8f; } .ss-seg .i, .dot.i { background: #e6a817; } .ss-seg .o, .dot.o { background: #c0392b; }" +
@@ -137,6 +137,7 @@
     return !!(document.fullscreenElement || document.webkitFullscreenElement);
   }
   function gameOnScreen(){
+    if (window.ssExtGame && window.ssExtGame.on) return true;   // X110: the Rhythm / Songs games (student-games.js)
     var sc = document.getElementById("stageCard");
     return !!(sc && sc.classList.contains("playing") && document.getElementById("gameRoot") && !document.querySelector(".lost-overlay"));
   }
@@ -376,8 +377,8 @@
       '<div class="ss-fs out" id="ssFs"></div></div>' +
       '<div class="ss-scroll"><div class="ss-sec">This session <span id="ssCurBadge"></span></div><div class="ss-pmore" id="ssMore"></div><div id="ssCur"></div>' +
       '<div class="ss-sec">Earlier sessions</div><div id="ssHist">' + histHtml() + '</div>' +
-      (dcode ? '<div class="ss-code">Device code <b>' + dcode + '</b></div>' : "") +
-      '<button type="button" class="ss-pb" id="ssTeach" title="teacher">teacher &middot; site X99b</button></div></div>';
+      '<button type="button" class="ss-pb" id="ssTeach" title="teacher">teacher &middot; site ' + window.SS_BUILD + '</button></div>' +
+      (dcode ? '<div class="ss-code" id="ssDevCode">Device code <b>' + dcode + '</b></div>' : "") + '</div>';
     [].forEach.call(host.querySelectorAll("details"), function(e){ if (openIds.indexOf(e.getAttribute("data-sid")) >= 0) e.open = true; });
     document.getElementById("ssTeach").onclick = function(){ teacherGate(whoMenu); };
     var ns = host.querySelector(".ss-scroll"); if (ns) ns.scrollTop = keep;
@@ -495,21 +496,26 @@
     items.push('<button type="button" class="ss-btn" id="ssBorrow">Someone else is using this Chromebook</button>');
     if (me && me.borrowed) items.push('<button type="button" class="ss-btn" id="ssBack">Back to ' + esc(o.name) + '</button>');
     items.push('<button type="button" class="ss-btn quiet" id="ssChange">Change this Chromebook\'s owner (teacher only)</button>');
+    items.push('<button type="button" class="ss-btn quiet" id="ssTester">' + (isTester() ? "Stop being a test computer (show the device code again)" : "Use as my test computer today (no pairing needed)") + '</button>');
     var ov = overlay('<h2>' + esc(me.name) + '</h2><p>' + (me.borrowed ? "Borrowing " + esc(o.name) + "'s Chromebook." : "This is " + esc(o.name) + "'s Chromebook.") + '</p><div class="ss-col">' + items.join("") + '</div><div class="ss-btns"><button type="button" class="ss-btn" id="ssX">Close</button></div>');
     ov.querySelector("#ssX").onclick = function(){ ov.remove(); };
     ov.querySelector("#ssBorrow").onclick = function(){ ov.remove(); askName(false); };
     var b = ov.querySelector("#ssBack"); if (b) b.onclick = function(){ ov.remove(); ls("current", "null"); endSession(); loadMe(); startSession(); chip(); applyStudent(); };
+    ov.querySelector("#ssTester").onclick = function(){ ov.remove(); if (isTester()) { ls("tester", "0"); try { localStorage.removeItem(P + "nopair:" + dstr()); localStorage.removeItem(P + "pairedlast"); } catch (e) {} } else ls("tester", String(Date.now())); if (pairOv) { pairOv.remove(); pairOv = null; } pairAtOpen(); };
     ov.querySelector("#ssChange").onclick = function(){
       ov.remove();
       pinPrompt({ title: "Teacher PIN", okLabel: "Go", cancelLabel: "Cancel", onOk: function(){ ls("owner", "null"); ls("current", "null"); endSession(); me = null; chip(); askName(true); } });
     };
+  }
+  function loadGames(){   // X110: the Rhythm and Songs games live in their own file
+    try { if (window.ssGamesLoaded) return; window.ssGamesLoaded = true; var sc = document.createElement("script"); sc.src = "student-games.js?b=" + encodeURIComponent(window.SS_BUILD || ""); document.head.appendChild(sc); } catch (e) {}
   }
   function init(c){
     cfg = c || {}; schedKnown = !!((cfg.classDays && Object.keys(cfg.classDays).length) || (cfg.schedule && cfg.schedule.length)); cfgReady = true; pairAtOpen(); try { window.ssCoverCheck && window.ssCoverCheck(); } catch (e) {}   // X104: schedKnown first, else the class cover waited for the next 5 s check
     var bar = document.createElement("div"); bar.id = "ssBar"; bar.className = "ss-bar";
     document.body.appendChild(bar); if (!PREVIEWISH || /[?&]preview=1/.test(location.search)) document.body.classList.add("ss-on");
     schedKnown = !!((cfg.classDays && Object.keys(cfg.classDays).length) || (cfg.schedule && cfg.schedule.length));
-    fillMsgs(); fitSoon();
+    fillMsgs(); fitSoon(); loadGames();
     if (cfg.paused) { overlay('<h2>The games are paused</h2><p>' + esc(cfg.pausedMsg || "Your teacher has paused the site. Look at the classroom screen for what to do.") + '</p>', "gate"); return; }
     if (/[?&]class=1/.test(location.search)) { me = { name: "Class", owner: "Class", borrowed: false, since: Date.now() }; applyStudent(); return; }   // X88b: the teacher's docked class view: no name prompt, practice is logged for "Class"
     loadMe();
@@ -520,15 +526,26 @@
   // X104: a settings push that PAUSES the site covers the page at once (even in the middle of a question); un-pausing / other changes reload the page when it is idle (student-cloud.js)
   // X106: live answers from the cloud service (student-cloud.js): HOLD (learning / review is up or bell-work is off: the page is covered and counts nothing) and PAIRING (the page shows its device code until the teacher pairs it to a student on his own computer).
   var holdOv = null, pairOv = null;
-  function skipPair(){ return !!jget("nopair:" + dstr(), false); }
+  function isTester(){ var t = Number(lg("tester") || 0); return !!t && new Date(t).toDateString() === new Date().toDateString(); }   // X110: the teacher's own test computer (PIN), valid for today
+  function skipPair(){ return !!jget("nopair:" + dstr(), false) || isTester(); }
   function showPair(code){   // X108: the code is large, and it is shown by the page itself the moment it opens (no wait for the first answer from the service)
     if (pairOv && pairOv.isConnected) return;
     pairOv = overlay('<h2>Your device code</h2><div class="ss-pc">' + esc(String(code || "")) + '</div><p>Show this code to your teacher.</p>' +
-      ((cfg.pairing && cfg.pairing.skip === false) ? "" : '<div style="margin-top:26px"><a href="#" id="ssNoPair" style="font-size:12px;color:#888;text-decoration:underline;opacity:.7">Start without pairing</a></div>'), "gate pair");
+      ((cfg.pairing && cfg.pairing.skip === false) ? "" : '<div style="margin-top:26px"><a href="#" id="ssNoPair" style="font-size:12px;color:#888;text-decoration:underline;opacity:.7">Start without pairing</a></div>') +
+      (PREVIEWISH ? "" : '<div style="margin-top:10px"><a href="#" id="ssTestPc" style="font-size:11px;color:#aaa;text-decoration:underline;opacity:.6">Teacher</a></div>'), "gate pair");
     var np = pairOv.querySelector("#ssNoPair"); if (np) np.onclick = function(e){ e.preventDefault(); ls("nopair:" + dstr(), "true"); if (pairOv) { pairOv.remove(); pairOv = null; } };
+    var tp = pairOv.querySelector("#ssTestPc"); if (tp) tp.onclick = function(e){ e.preventDefault(); teacherGate(function(){ ls("tester", String(Date.now())); if (pairOv) { pairOv.remove(); pairOv = null; } }); };   // X110: the teacher PIN makes this computer a test computer for today (no pairing needed; students never get this)
   }
+  window.ssPairNeeded = function(){   // X110: the device code, when this Chromebook still has to be paired (the full-screen cover shows it too, so it is never hidden behind the cover)
+    try {
+      if (PREVIEWISH || !cfgReady || !(cfg.pairing && cfg.pairing.on) || !inClass() || skipPair() || /[?&]class=1/.test(location.search)) return "";
+      var cl = window.__ssCloud || {}; if (cl.paired === true) return "";
+      if (cl.paired !== false) { var pl = /^1:(\d+)$/.exec(localStorage.getItem(P + "pairedlast") || ""); if (pl && Date.now() - Number(pl[1]) < 20 * 60000) return ""; }
+      return (window.ssDeviceCode && window.ssDeviceCode()) || "";
+    } catch (e) { return ""; }
+  };
   function pairAtOpen(){
-    try { if (PREVIEWISH || /[?&]class=1/.test(location.search) || !(cfg.pairing && cfg.pairing.on) || !inClass() || skipPair()) return; if (localStorage.getItem(P + "pairedlast") === "1") return; var c = window.ssDeviceCode && window.ssDeviceCode(); if (c) showPair(c); } catch (e) {}
+    try { if (PREVIEWISH || /[?&]class=1/.test(location.search) || !(cfg.pairing && cfg.pairing.on) || !inClass() || skipPair()) return; var pl = /^1:(\d+)$/.exec(localStorage.getItem(P + "pairedlast") || ""); if (pl && Date.now() - Number(pl[1]) < 20 * 60000) return;   /* X110: only a "paired" answer from the last 20 minutes hides the code at once; an older one waits for the first answer from the service (about a second) */ var c = window.ssDeviceCode && window.ssDeviceCode(); if (c) showPair(c); } catch (e) {}
   }
   window.addEventListener("ss-live", function(ev){
     var d = ev.detail || {}; if (!cfgReady || PREVIEWISH || /[?&]class=1/.test(location.search)) return;
@@ -554,13 +571,14 @@
       var ovl = t.closest(".ss-ov");
       if (ovl) { if (t.closest(".ss-pvx")) return; var h = (ovl.querySelector("h2") || {}).textContent || ""; tell({ kind: "page", id: /pair/.test(ovl.className) ? "pair" : /still/.test(ovl.className) ? "still" : /paused/i.test(h) ? "paused" : /PIN/.test(h) ? "pin" : /Chromebook/.test(h) ? "name" : "" }); return; }
       var g = t.closest('[data-action="hub-type"]'); if (g) { tell({ kind: "game", id: g.getAttribute("data-type") }); return; }
+      var g2 = t.closest("[data-ssg]"); if (g2) { tell({ kind: "game", id: g2.getAttribute("data-ssg") }); return; }
       var m = t.closest(".ss-msg"); if (m) { tell({ kind: "msg", i: +m.getAttribute("data-mi") }); return; }
       if (t.closest(".ss-msgs")) tell({ kind: "msgs" });
     }, true);
     window.addEventListener("message", function(ev){
       var d = ev.data; if (!d || ev.source !== window.parent) return;
       if (d.type === "ss-focus") {
-        var el = d.kind === "game" ? document.querySelector('[data-action="hub-type"][data-type="' + String(d.id).replace(/"/g, "") + '"]') : d.kind === "msg" ? document.querySelector('.ss-msg[data-mi="' + (+d.i) + '"]') : d.kind === "msgs" ? document.querySelector(".ss-msgs") : null;
+        var el = d.kind === "game" ? (document.querySelector('[data-action="hub-type"][data-type="' + String(d.id).replace(/"/g, "") + '"]') || document.querySelector('[data-ssg="' + String(d.id).replace(/"/g, "") + '"]')) : d.kind === "msg" ? document.querySelector('.ss-msg[data-mi="' + (+d.i) + '"]') : d.kind === "msgs" ? document.querySelector(".ss-msgs") : null;
         if (!el) return; try { el.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (e) {}
         el.classList.remove("ss-pulse"); void el.offsetWidth; el.classList.add("ss-pulse"); setTimeout(function(){ el.classList.remove("ss-pulse"); }, 3200);
       } else if (d.type === "ss-show") {
@@ -587,16 +605,17 @@
   var ov = null;
   function need(){ return !!(window.ssInClass && window.ssInClass()) && !(document.fullscreenElement || document.webkitFullscreenElement); }   // X98: only during a class period (the panel's schedule)
   function enter(){ var e = document.documentElement, f = e.requestFullscreen || e.webkitRequestFullscreen; try { var r = f && f.call(e); if (r && r.catch) r.catch(function(){}); } catch (x) {} }
+  function codeHtml(){ var c = window.ssPairNeeded && window.ssPairNeeded(); return c ? '<div style="font-size:20px;opacity:.85">Your device code</div><div style="font:800 min(15vh,14vw) system-ui,sans-serif;letter-spacing:.04em;white-space:nowrap;line-height:1.1">' + c.replace(/[^a-z0-9]/gi, "") + '</div><div style="font-size:18px;margin-bottom:10px">Show this code to your teacher.</div>' : ""; }
   function show(){
     if (ov || !need()) return;
     ov = document.createElement("div");
     ov.setAttribute("style", "position:fixed;inset:0;z-index:2147483647;background:#1d1b3a;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font:600 18px system-ui,sans-serif;text-align:center;padding:20px");
-    ov.innerHTML = '<div style="font-size:26px;max-width:520px">Only Available in Full Screen During Class</div><button type="button" style="font:700 18px system-ui;padding:12px 26px;border-radius:12px;border:0;background:#7c5cf5;color:#fff;cursor:pointer">Start (Full Screen)</button>';
+    ov.innerHTML = '<div class="cvc" style="display:flex;flex-direction:column;align-items:center">' + codeHtml() + '</div><div style="font-size:26px;max-width:520px">Only Available in Full Screen During Class</div><button type="button" style="font:700 18px system-ui;padding:12px 26px;border-radius:12px;border:0;background:#7c5cf5;color:#fff;cursor:pointer">Start (Full Screen)</button>';
     ov.querySelector("button").addEventListener("click", function(){ enter(); });
     document.body.appendChild(ov);
   }
   function hide(){ if (ov && !need()) { ov.remove(); ov = null; } }   // X95: the cover is taken away once full screen is on (it used to stay)
-  function check(){ if (need()) show(); else hide(); }
+  function check(){ if (need()) { show(); var cv = ov && ov.querySelector(".cvc"); if (cv) { var h = codeHtml(); if (cv.getAttribute("data-h") !== h) { cv.innerHTML = h; cv.setAttribute("data-h", h); } } } else hide(); }
   window.ssCoverCheck = check;
   document.addEventListener("fullscreenchange", check);
   document.addEventListener("webkitfullscreenchange", check);

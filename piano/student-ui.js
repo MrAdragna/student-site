@@ -2,7 +2,7 @@
    session timer, the "show my session" screen, today's focus message, and the teacher-only controls blocked. */
 (function(){
   "use strict";
-  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X114";   // X101 (c13): failing class tests need no PIN; a test cut off by the end of class is saved as a practice test with the score so far
+  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X115";   // X101 (c13): failing class tests need no PIN; a test cut off by the end of class is saved as a practice test with the score so far
   function lg(k){ try { return localStorage.getItem(P + k); } catch (e) { return null; } }
   function ls(k, v){ try { localStorage.setItem(P + k, v); } catch (e) {} }
   function jget(k, d){ try { var v = JSON.parse(lg(k)); return v == null ? d : v; } catch (e) { return d; } }
@@ -35,7 +35,7 @@
       ".ss-fs b { display: block; font-size: 34px; font-weight: 800; } .ss-fs span { font-size: 12px; font-weight: 700; opacity: .95; } .ss-fs small { display: block; margin-top: 3px; font-size: 11px; opacity: .85; }" +
       ".ss-pmore { font-size: 12.5px; color: #444; line-height: 1.5; } .ss-pmore b { color: #2a2170; }" +
       ".ss-side .ss-tbl { font-size: 12px; margin: 0; } .ss-side .ss-tbl th { font-size: 10.5px; line-height: 1.1; } .ss-side .ss-tbl th, .ss-side .ss-tbl td { padding: 3px 3px; }" +
-      ".ss-side .ss-code { flex: 0 0 auto; margin: 0; padding: 5px; text-align: center; border: 3px dashed #3a2f8f; border-radius: 12px; background: #fff; } .ss-side .ss-code b { font-size: 38px; letter-spacing: 5px; margin-left: 6px; }" +
+      ".ss-side .ss-code { flex: 0 0 auto; margin: 0; padding: 5px; text-align: center; border: 3px dashed #3a2f8f; border-radius: 12px; background: #fff; } .ss-side .ss-code b { font-size: 26px; letter-spacing: 3px; margin-left: 6px; }" +
       ".ss-pb { align-self: flex-end; font: inherit; font-size: 11px; font-weight: 700; border: 0; background: none; color: #aaa; cursor: pointer; padding: 0; }" +
       ".ss-qs { display: block; font-size: 12px; font-weight: 700; color: #555; margin-top: 2px; } .ss-qs.slow { color: #b7791f; }" +
       ".ss-seg { display: flex; height: 10px; border-radius: 6px; overflow: hidden; background: #eee; } .ss-seg i { display: block; height: 100%; } .ss-seg .a, .dot.a { background: #3a2f8f; } .ss-seg .i, .dot.i { background: #e6a817; } .ss-seg .o, .dot.o { background: #c0392b; }" +
@@ -47,7 +47,7 @@
       ".ss-tbl tr.tst td { background: #fff1d6; } .ss-warn { background: #fde2e0; color: #8a1c14; border-radius: 6px; padding: 3px 8px; font-size: 12px; font-weight: 700; margin-bottom: 4px; } .ss-warn2 { color: #8a1c14; font-weight: 700; }" +
       ".ss-h { border: 1px solid #ddd; border-radius: 8px; margin-bottom: 5px; padding: 3px 8px; font-size: 12.5px; } .ss-h summary { cursor: pointer; } .ss-hl { color: #555; font-size: 11.5px; margin: 4px 0; }" +
       ".ss-top { flex: 0 0 auto; display: flex; flex-direction: column; gap: 8px; } .ss-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 2px; }" +
-      ".ss-ov.pair .ss-card { width: auto; max-width: 92vw; min-height: 40vh; padding: 5vh min(7vh, 4vw); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; } .ss-ov.pair .ss-card * { text-align: center; } .ss-ov.pair h2 { font-size: 4.2vh; margin: 0; } .ss-ov.pair .ss-pc { font: 800 min(15vh, 14vw)/1.1 ui-monospace, Menlo, monospace; letter-spacing: .04em; white-space: nowrap; margin: 1.5vh 0; } .ss-ov.pair p { font-size: 3vh; margin: 0; }" +
+      ".ss-ov.pair .ss-card { width: auto; max-width: 92vw; min-height: 40vh; padding: 5vh min(7vh, 4vw); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; } .ss-ov.pair .ss-card * { text-align: center; } .ss-ov.pair h2 { font-size: 4.2vh; margin: 0; } .ss-ov.pair .ss-pc { font: 800 min(22vh, 17vw)/1.1 ui-monospace, Menlo, monospace; letter-spacing: .04em; white-space: nowrap; margin: 1.5vh 0; } .ss-ov.pair p { font-size: 3vh; margin: 0; }" +
       ".ss-pvx { position: absolute; top: 8px; right: 8px; font: 12px system-ui; border: 1px dashed #888; background: #fff; color: #444; border-radius: 6px; padding: 2px 8px; cursor: pointer; } @keyframes ssPulse { 0%, 100% { outline-color: rgba(233,163,26,0); } 50% { outline-color: #e9a31a; } } .ss-pulse { outline: 5px solid #e9a31a; outline-offset: 3px; animation: ssPulse .7s ease-in-out 4; border-radius: 10px; }" +
       ".ss-ov.still .ss-card, .ss-ov.still .ss-card * { text-align: center; } .ss-ov.still .ss-btns { justify-content: center; } .ss-ov.still .ss-card { display: flex; flex-direction: column; align-items: center; }" +
       ".ss-who { text-align: center; } .ss-psub { text-align: center; }" +
@@ -607,7 +607,7 @@
   var ov = null;
   function need(){ return !!(window.ssInClass && window.ssInClass()) && !(document.fullscreenElement || document.webkitFullscreenElement); }   // X98: only during a class period (the panel's schedule)
   function enter(){ var e = document.documentElement, f = e.requestFullscreen || e.webkitRequestFullscreen; try { var r = f && f.call(e); if (r && r.catch) r.catch(function(){}); } catch (x) {} }
-  function codeHtml(){ var c = window.ssPairNeeded && window.ssPairNeeded(); return c ? '<div style="font-size:20px;opacity:.85">Your device code</div><div style="font:800 min(15vh,14vw) system-ui,sans-serif;letter-spacing:.04em;white-space:nowrap;line-height:1.1">' + c.replace(/[^a-z0-9]/gi, "") + '</div><div style="font-size:18px;margin-bottom:10px">Show this code to your teacher.</div>' : ""; }
+  function codeHtml(){ var c = window.ssPairNeeded && window.ssPairNeeded(); return c ? '<div style="font-size:20px;opacity:.85">Your device code</div><div style="font:800 min(22vh,17vw) system-ui,sans-serif;letter-spacing:.04em;white-space:nowrap;line-height:1.1">' + c.replace(/[^a-z0-9]/gi, "") + '</div><div style="font-size:18px;margin-bottom:10px">Show this code to your teacher.</div>' : ""; }
   function show(){
     if (ov || !need()) return;
     ov = document.createElement("div");

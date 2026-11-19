@@ -2,7 +2,7 @@
    session timer, the "show my session" screen, today's focus message, and the teacher-only controls blocked. */
 (function(){
   "use strict";
-  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X108";   // X101 (c13): failing class tests need no PIN; a test cut off by the end of class is saved as a practice test with the score so far
+  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X108b";   // X101 (c13): failing class tests need no PIN; a test cut off by the end of class is saved as a practice test with the score so far
   function lg(k){ try { return localStorage.getItem(P + k); } catch (e) { return null; } }
   function ls(k, v){ try { localStorage.setItem(P + k, v); } catch (e) {} }
   function jget(k, d){ try { var v = JSON.parse(lg(k)); return v == null ? d : v; } catch (e) { return d; } }
@@ -520,7 +520,7 @@
   function skipPair(){ return !!jget("nopair:" + dstr(), false); }
   function showPair(code){   // X108: the code is large, and it is shown by the page itself the moment it opens (no wait for the first answer from the service)
     if (pairOv) return;
-    pairOv = overlay('<h2 style="font-size:clamp(28px,5vw,56px)">Your device code</h2><div style="font:800 clamp(96px,26vw,300px)/1.05 ui-monospace,Menlo,monospace;letter-spacing:.06em;margin:.1em 0">' + esc(String(code || "")) + '</div><p style="font-size:clamp(18px,2.6vw,32px)">Show this code to your teacher.</p>' +
+    pairOv = overlay('<h2>Your device code</h2><div style="font:800 min(96px,16vw)/1.1 ui-monospace,Menlo,monospace;letter-spacing:.04em;white-space:nowrap;margin:.1em 0">' + esc(String(code || "")) + '</div><p>Show this code to your teacher.</p>' +
       ((cfg.pairing && cfg.pairing.skip === false) ? "" : '<div style="margin-top:26px"><a href="#" id="ssNoPair" style="font-size:12px;color:#888;text-decoration:underline;opacity:.7">Start without pairing</a></div>'), "gate pair");
     var np = pairOv.querySelector("#ssNoPair"); if (np) np.onclick = function(e){ e.preventDefault(); ls("nopair:" + dstr(), "true"); if (pairOv) { pairOv.remove(); pairOv = null; } };
   }

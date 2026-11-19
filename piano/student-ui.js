@@ -2,7 +2,7 @@
    session timer, the "show my session" screen, today's focus message, and the teacher-only controls blocked. */
 (function(){
   "use strict";
-  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X112";   // X101 (c13): failing class tests need no PIN; a test cut off by the end of class is saved as a practice test with the score so far
+  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X114";   // X101 (c13): failing class tests need no PIN; a test cut off by the end of class is saved as a practice test with the score so far
   function lg(k){ try { return localStorage.getItem(P + k); } catch (e) { return null; } }
   function ls(k, v){ try { localStorage.setItem(P + k, v); } catch (e) {} }
   function jget(k, d){ try { var v = JSON.parse(lg(k)); return v == null ? d : v; } catch (e) { return d; } }
@@ -12,7 +12,7 @@
   function hm(d){ var h = d.getHours(); return ((h % 12) || 12) + ":" + pad(d.getMinutes()) + " " + (h < 12 ? "AM" : "PM"); }   // always 12-hour AM/PM
   function slug(n){ return "s-" + String(n).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
   var cfg = {}, me = null;   // me = { name, owner, borrowed, since }
-  var PREVIEWISH = /[?&](preview|class)=1/.test(location.search);
+  var PREVIEWISH = /[?&](preview|class|livetest)=1/.test(location.search);
 
   // X96: the student view has no Note ID title, no Practice / History tabs, no name chip and no per-game full-screen button (the page's own full screen is used instead)
   (function(){
@@ -35,7 +35,7 @@
       ".ss-fs b { display: block; font-size: 34px; font-weight: 800; } .ss-fs span { font-size: 12px; font-weight: 700; opacity: .95; } .ss-fs small { display: block; margin-top: 3px; font-size: 11px; opacity: .85; }" +
       ".ss-pmore { font-size: 12.5px; color: #444; line-height: 1.5; } .ss-pmore b { color: #2a2170; }" +
       ".ss-side .ss-tbl { font-size: 12px; margin: 0; } .ss-side .ss-tbl th { font-size: 10.5px; line-height: 1.1; } .ss-side .ss-tbl th, .ss-side .ss-tbl td { padding: 3px 3px; }" +
-      ".ss-side .ss-code { flex: 0 0 auto; margin: 0; padding: 5px; text-align: center; border: 3px dashed #3a2f8f; border-radius: 12px; background: #fff; } .ss-side .ss-code b { font-size: 26px; letter-spacing: 4px; margin-left: 6px; }" +
+      ".ss-side .ss-code { flex: 0 0 auto; margin: 0; padding: 5px; text-align: center; border: 3px dashed #3a2f8f; border-radius: 12px; background: #fff; } .ss-side .ss-code b { font-size: 38px; letter-spacing: 5px; margin-left: 6px; }" +
       ".ss-pb { align-self: flex-end; font: inherit; font-size: 11px; font-weight: 700; border: 0; background: none; color: #aaa; cursor: pointer; padding: 0; }" +
       ".ss-qs { display: block; font-size: 12px; font-weight: 700; color: #555; margin-top: 2px; } .ss-qs.slow { color: #b7791f; }" +
       ".ss-seg { display: flex; height: 10px; border-radius: 6px; overflow: hidden; background: #eee; } .ss-seg i { display: block; height: 100%; } .ss-seg .a, .dot.a { background: #3a2f8f; } .ss-seg .i, .dot.i { background: #e6a817; } .ss-seg .o, .dot.o { background: #c0392b; }" +
@@ -515,7 +515,7 @@
   function init(c){
     cfg = c || {}; schedKnown = !!((cfg.classDays && Object.keys(cfg.classDays).length) || (cfg.schedule && cfg.schedule.length)); cfgReady = true; pairAtOpen(); try { window.ssCoverCheck && window.ssCoverCheck(); } catch (e) {}   // X104: schedKnown first, else the class cover waited for the next 5 s check
     var bar = document.createElement("div"); bar.id = "ssBar"; bar.className = "ss-bar";
-    document.body.appendChild(bar); if (!PREVIEWISH || /[?&]preview=1/.test(location.search)) document.body.classList.add("ss-on");
+    document.body.appendChild(bar); if (!PREVIEWISH || /[?&](preview|livetest)=1/.test(location.search)) document.body.classList.add("ss-on");
     schedKnown = !!((cfg.classDays && Object.keys(cfg.classDays).length) || (cfg.schedule && cfg.schedule.length));
     fillMsgs(); fitSoon(); loadGames();
     if (cfg.paused) { overlay('<h2>The games are paused</h2><p>' + esc(cfg.pausedMsg || "Your teacher has paused the site. Look at the classroom screen for what to do.") + '</p>', "gate"); return; }

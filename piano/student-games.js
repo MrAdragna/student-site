@@ -1121,7 +1121,27 @@
     var st = [], gi = 0, left = 0;
     for (var m = 0; m < M; m++) { if (left <= 0) { st[m] = true; left = sizes[Math.min(gi, sizes.length - 1)]; gi++; } else st[m] = false; left--; }
     return st;
-  }  return { renderScore: renderScore, midiOf: midiOf, notesOf: notesOf, staffList: staffList };
+  }  function crossModel(ex){
+    var model = { tm: {}, mOf: {}, nt: { R: ex.notes || [], L: ex.notesL || [] } };
+    ["R", "L"].forEach(function(st){
+      var nt = model.nt[st], t = 0, arr = [], mm = {};
+      nt.forEach(function(n){ var b = noteBeats(n); arr.push({ s: t, e: t + b }); t += b; });
+      splitMeasures(nt, timeOf(ex), ex.pickup).measures.forEach(function(m, k){ m.idx.forEach(function(i){ mm[i] = k; }); });
+      model.tm[st] = arr; model.mOf[st] = mm;
+    });
+    return model;
+  }
+  // the note a beam from (st, i) would run to: the note on the other staff that starts when this one ends (else, optionally, the next note of the same staff)
+  function crossTargetOf(model, st, i, allowSame){
+    var oth = st === "R" ? "L" : "R", A = model.nt[oth], j;
+    if (!beamableData(model.nt[st][i])) return null;
+    for (j = 0; j < A.length; j++) if (Math.abs(model.tm[oth][j].s - model.tm[st][i].e) < 1e-6 && beamableData(A[j]) && model.mOf[oth][j] === model.mOf[st][i]) return { st: oth, i: j };
+    if (allowSame && beamableData(model.nt[st][i + 1]) && model.mOf[st][i + 1] === model.mOf[st][i]) return { st: st, i: i + 1 };
+    return null;
+  }
+  // the note on the other staff that ends when this one starts (a beam from it would run to this note)
+  function beamableData(n){ return !!n && (!n.rest || n.snap) && (n.d === "8" || n.d === "16"); }
+  return { renderScore: renderScore, midiOf: midiOf, notesOf: notesOf, staffList: staffList };
   })();
 
   // =====================================================================
@@ -1179,7 +1199,7 @@
     ".ssg-msg { font-size: 17px; font-weight: 700; min-height: 26px; } .ssg-msg .big { font-size: 28px; } .ssg-msg .okc { color: #1a8a4a; } .ssg-msg .no { color: #c0392b; } .ssg-sub { font-size: 14px; color: #555; font-weight: 600; line-height: 1.5; }" +
     ".ssg-pad { border: 3px dashed #3a2f8f; border-radius: 14px; padding: 14px; text-align: center; font-weight: 800; color: #3a2f8f; background: #f4f2ff; cursor: pointer; user-select: none; touch-action: none; } .ssg-pad.down { background: #3a2f8f; color: #fff; }" +
     "#rStart, #rAgain { display: none !important; } .ssg-btn[disabled] { opacity: .35; cursor: not-allowed; } .ssg-lane .nowbox { position: absolute; left: 10px; right: 10px; top: 16px; height: 64px; border: 3px solid #cfcbe8; background: #fff; border-radius: 12px; font-weight: 800; font-size: 20px; text-align: center; line-height: 58px; color: #b9b5d8; transition: background .06s; } .ssg-lane .nowbox.on { background: #3a7bd5; border-color: #2a5aa8; color: #fff; } .nocount { margin-top: 8px; padding: 10px 14px; border-radius: 12px; background: #fff0c7; border: 3px solid #e9a31a; font-size: 20px; font-weight: 800; color: #8a4b00; } .ssg-btns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }" +
-    ".ssg-kb { position: relative; height: 170px; user-select: none; touch-action: none; margin-top: auto; flex: none; } .ssg-kb .wk { position: absolute; top: 0; bottom: 0; border: 1px solid #555; background: #fff; border-radius: 0 0 6px 6px; box-sizing: border-box; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; font-size: 12px; font-weight: 800; color: #3a2f8f; } .ssg-kb .bk { position: absolute; top: 0; height: 62%; background: #222; border-radius: 0 0 5px 5px; z-index: 2; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 5px; font-size: 11px; font-weight: 800; color: #fff; box-sizing: border-box; } .ssg-kb .wk.down { background: #cfe3ff; } .ssg-kb .bk.down { background: #3a7bd5; } .ssg-kb .c4 { background: #f7f4ff; } .ssg-kb .wk .nm { position: absolute; top: 5px; left: 0; right: 0; text-align: center; font-size: 11px; font-style: normal; text-decoration: none; color: #9a9ab0; font-weight: 700; } .ssg-kb .wk.c3 .nm, .ssg-kb .wk.c4 .nm, .ssg-kb .wk.c5 .nm, .ssg-kb .wk.c2 .nm, .ssg-kb .wk.c6 .nm { color: #3a2f8f; }" +
+    ".ssg-kb { position: relative; height: 170px; user-select: none; touch-action: none; margin-top: auto; flex: none; } .ssg-kb .wk { position: absolute; top: 0; bottom: 0; border: 1px solid #555; background: #fff; border-radius: 0 0 6px 6px; box-sizing: border-box; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; font-size: 12px; font-weight: 800; color: #3a2f8f; } .ssg-kb .bk { position: absolute; top: 0; height: 62%; background: #222; border-radius: 0 0 5px 5px; z-index: 2; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 5px; font-size: 11px; font-weight: 800; color: #fff; box-sizing: border-box; } .ssg-kb .wk.down { background: #cfe3ff; } .ssg-kb .bk.down { background: #3a7bd5; } .ssg-kb .c4 { background: #f7f4ff; } .ssg-kb { margin-bottom: 22px; } .ssg-kb .wk .nm { position: absolute; top: 5px; left: 0; right: 0; text-align: center; font-size: 11px; font-style: normal; text-decoration: none; color: #9a9ab0; font-weight: 700; } .ssg-kb .wk.c3 .nm, .ssg-kb .wk.c4 .nm, .ssg-kb .wk.c5 .nm, .ssg-kb .wk.c2 .nm, .ssg-kb .wk.c6 .nm { color: #3a2f8f; }" +
     ".ssg-count span { display: inline-block; min-width: 84px; text-align: center; padding: 4px 10px 6px; border-radius: 14px; border: 2px solid transparent; } .ssg-count span.on { background: #3a2f8f; color: #fff; border-color: #3a2f8f; transform: none; } .ssg-count span.on small { color: #d9d4ff; } .ssg-dots { display: inline-flex; gap: 3px; vertical-align: middle; } .ssg-dots i { width: 10px; height: 10px; border-radius: 50%; background: #ddd; display: inline-block; } .ssg-dots i.y { background: #1a8a4a; } .ssg-dots i.n { background: #c0392b; } .ssg-dots i.o { background: #e9b320; } .bdg { display: inline-block; font-size: 10px; font-weight: 800; border-radius: 8px; padding: 0 6px; margin-right: 3px; text-transform: uppercase; } .bdg.late { background: #fbdcd8; color: #a3281a; } .bdg.now { background: #d9f3e3; color: #14683a; } .ssg-item.lk { opacity: .5; } .nocount { margin-top: 4px; font-size: 14px; font-weight: 700; color: #a35a00; } .ssg-ver { font-size: 11px; color: #999; font-weight: 600; } " +
     ".ssg-grp { font-size: 12px; font-weight: 800; color: #6b64a8; text-transform: uppercase; letter-spacing: .04em; margin: 8px 2px 0; } .ssg-item[disabled] { opacity: .45; cursor: not-allowed; } [data-ssg].on { outline: 3px solid #3a2f8f; }" +
     "@media (max-width: 900px) { .ssg-side { width: 150px; } }";
@@ -1231,7 +1251,7 @@
   var obsT = 0;
   function watch(){
     injectCards();
-    try { new MutationObserver(function(){ clearTimeout(obsT); obsT = setTimeout(injectCards, 30); }).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
+    try { new MutationObserver(function(){ injectCards(); })   /* X116: put the Rhythm / Songs buttons back at once (no flicker when NoteID redraws its bar) */.observe(document.body, { childList: true, subtree: true }); } catch (e) {}
     setInterval(placeHost, 700);
     document.addEventListener("click", function(ev){
       var b = ev.target && ev.target.closest && ev.target.closest("[data-ssg]"); if (!b) return;
@@ -1263,11 +1283,13 @@
   var NAMES_SIMPLE = { 4: ["1", "2", "3", "4"], 3: ["1", "2", "3"] }, NAMES_68 = ["1", "+", "a", "2", "+", "a"];
   function tickMsOf(T, bpm){ return 60000 / (bpm * T.beat); }
 
+  window.ssGameBusy = function(){ return !!(R && (R.phase === "count" || R.phase === "run")); };
+  var CAL = { done: false, offset: 0, fails: 0 };   // X116: lives only until the page is refreshed; every refresh starts with a one-measure warm-up
   function openRhythm(){
     if (!window.VexFlow) { alert("The music drawing code did not load. Reload the page."); return; }
     if (!levels.length) loadLevels();
-    var body = openHost("rhythm", "Rhythm", '<span class="ssg-ver">games X115</span>' + '<span class="ctl">Tempo <button type="button" class="ssg-btn sm" id="rSlow">&minus;</button><b id="rTempo"></b><button type="button" class="ssg-btn sm" id="rFast">+</button></span>' +
-      '<span class="ctl" id="rTeach" style="display:none" title="Teacher only">Teacher: <label><input type="checkbox" id="rOpenAll"> open every level</label> <button type="button" class="ssg-btn sm" id="rResetLv" title="Forget every level\'s tries on this computer">Reset all levels</button> <button type="button" class="ssg-btn sm" id="rResetOne" title="Forget the tries of this level">Reset this level</button> <button type="button" class="ssg-btn sm" id="rClearOne" title="Count this level as cleared">Clear this level</button></span>');
+    var body = openHost("rhythm", "Rhythm", '<span class="ssg-ver">games X116</span>' + '<span class="ctl">Tempo <button type="button" class="ssg-btn sm" id="rSlow">&minus;</button><b id="rTempo"></b><button type="button" class="ssg-btn sm" id="rFast">+</button></span>' +
+      '<span class="ctl" id="rTeach" style="display:none" title="Teacher only">Teacher: <span id="rCal"></span> <button type="button" class="ssg-btn sm" id="rRewarm">Redo warm-up</button> <label><input type="checkbox" id="rOpenAll"> open every level</label> <button type="button" class="ssg-btn sm" id="rResetLv" title="Forget every level\'s tries on this computer">Reset all levels</button> <button type="button" class="ssg-btn sm" id="rResetOne" title="Forget the tries of this level">Reset this level</button> <button type="button" class="ssg-btn sm" id="rClearOne" title="Count this level as cleared">Clear this level</button></span>');
     body.innerHTML = '<div class="ssg-side" id="rLevels"></div><div class="ssg-main"><div class="ssg-sub" id="rTitle"></div><div class="ssg-count" id="rCount"></div><div class="ssg-staff" id="rStaff"></div><div class="ssg-lane" id="rLane"></div>' +
       '<div class="ssg-msg" id="rMsg"></div><div class="ssg-sub" id="rDet"></div><div class="ssg-btns"><button type="button" class="ssg-btn primary" id="rStart">Start</button><button type="button" class="ssg-btn" id="rAgain" style="display:none">Try again</button><button type="button" class="ssg-btn" id="rStop" disabled>Backspace to stop</button><button type="button" class="ssg-btn" id="rNew">N for new rhythm</button><button type="button" class="ssg-btn" id="rNext" style="display:none">Next level</button></div>' +
       '<div class="ssg-pad" id="rPad">Click here or press any key to start</div></div></div>';
@@ -1304,11 +1326,11 @@
     var ku = function(ev){ if (!host || host.getAttribute("data-game") !== "rhythm") return; ev.preventDefault(); ev.stopPropagation(); tapUp(ev.code || ev.key, ev.timeStamp > 0 ? ev.timeStamp : performance.now()); };
     window.addEventListener("keydown", kd, true); window.addEventListener("keyup", ku, true);
     cleanup = function(){ window.removeEventListener("keydown", kd, true); window.removeEventListener("keyup", ku, true); cancelAnimationFrame(raf); R = null; };
-    if (isTeacher()) { h.querySelector("#rTeach").style.display = ""; var oa = h.querySelector("#rOpenAll"); oa.checked = lg("rhythm-openall") === "1"; oa.onchange = function(){ ls("rhythm-openall", this.checked ? "1" : "0"); drawLevels(); }; h.querySelector("#rResetLv").onclick = function(){ ls("rhythm-results", "{}"); drawLevels(); }; h.querySelector("#rResetOne").onclick = function(){ var rs = rResults(); delete rs[levels[R.lv].id]; ls("rhythm-results", JSON.stringify(rs)); drawLevels(); }; h.querySelector("#rClearOne").onclick = function(){ var rs = rResults(), id = levels[R.lv].id, r = rs[id] || (rs[id] = { tries: 0, passes: 0, best: null }); r.h2 = [2, 2, 2, 2, 2]; ls("rhythm-results", JSON.stringify(rs)); drawLevels(); }; }
+    if (isTeacher()) { h.querySelector("#rTeach").style.display = ""; h.querySelector("#rRewarm").onclick = function(){ if (R.phase === "count" || R.phase === "run") abortRun(); CAL.done = false; startWarm(); this.blur(); }; var oa = h.querySelector("#rOpenAll"); oa.checked = lg("rhythm-openall") === "1"; oa.onchange = function(){ ls("rhythm-openall", this.checked ? "1" : "0"); drawLevels(); }; h.querySelector("#rResetLv").onclick = function(){ ls("rhythm-results", "{}"); drawLevels(); }; h.querySelector("#rResetOne").onclick = function(){ var rs = rResults(); delete rs[levels[R.lv].id]; ls("rhythm-results", JSON.stringify(rs)); drawLevels(); }; h.querySelector("#rClearOne").onclick = function(){ var rs = rResults(), id = levels[R.lv].id, r = rs[id] || (rs[id] = { tries: 0, passes: 0, best: null }); r.h2 = [2, 2, 2, 2, 2]; ls("rhythm-results", JSON.stringify(rs)); drawLevels(); }; }
     var fsw = function(){ if (R && R.fs && !document.fullscreenElement && (R.phase === "count" || R.phase === "run")) failRun("You left full screen."); };
     document.addEventListener("fullscreenchange", fsw);
     var cl0 = cleanup; cleanup = function(){ document.removeEventListener("fullscreenchange", fsw); if (cl0) cl0(); };
-    drawLevels(); setLevel(last, true);
+    drawLevels(); setLevel(last, true); if (!CAL.done) startWarm();
   }
   function dotsHtml(lv){ var r = rResults()[lv.id], h = (r && r.h2 || []).slice(-5), o = '<span class="ssg-dots" title="Last 5 tries">'; for (var k = 0; k < 5; k++) { var v = h[k]; o += '<i class="' + (v === 2 ? "y" : v === 1 ? "o" : v === 0 ? "n" : "") + '"></i>'; } return o + '</span>'; }
   function curLevel(){ for (var k = 0; k < levels.length; k++) if (!cleared(levels[k])) return k; return -1; }
@@ -1321,7 +1343,7 @@
     [].forEach.call(el.querySelectorAll("[data-i]"), function(b){ b.onclick = function(){ if (b.disabled) return; if (R.phase === "count" || R.phase === "run") abortRun(); setLevel(+b.getAttribute("data-i")); }; });
   }
   function setLevel(i, first){
-    R.lv = i; ls("rhythm-level", String(i)); R.follow = false; R.tempo = levels[i].tempo || 72;
+    R.warm = false; R.afterWarm = false; R.lv = i; ls("rhythm-level", String(i)); R.follow = false; R.tempo = levels[i].tempo || 72;
     host.querySelector("#rTempo").textContent = R.tempo;
     if (!first) drawLevels(); else drawLevels();
     newExercise();
@@ -1418,7 +1440,7 @@
     var G = R.geo, T = R.ex.ts, out = [], total = G.total; a0 = Math.max(0, a0); a1 = Math.min(total, a1); if (a1 <= a0) return out;
     for (var m = Math.floor(a0 / T.ticks); m * T.ticks < a1 && m < R.ex.measures.length; m++) {
       var lo = Math.max(a0, m * T.ticks), hi = Math.min(a1, (m + 1) * T.ticks), y = G.topPad + G.layout[m].row * G.rowH;
-      var x0 = G.posAt(lo).x, x1 = hi >= (m + 1) * T.ticks ? G.mEnd[m] - 4 : G.posAt(hi).x;
+      var SH = 10, x0 = G.posAt(lo).x - SH, x1 = hi >= (m + 1) * T.ticks ? G.mEnd[m] - 4 : G.posAt(hi).x - SH;   // X116: posAt gives the middle of a note head; boxes start at its left edge
       out.push({ x0: x0, x1: Math.max(x0 + 3, x1), y: y });
     }
     return out;
@@ -1442,7 +1464,7 @@
     });
     R.taps.forEach(function(tp){
       var t0 = (tp.down - R.w0) / R.tickMs, t1 = ((tp.up == null ? tp.down + 80 : tp.up) - R.w0) / R.tickMs;
-      segs(t0, Math.max(t1, t0 + 0.12)).forEach(function(g){ svgEl("rect", { x: g.x0, y: g.y + 128, width: Math.max(5, g.x1 - g.x0), height: 22, rx: 5, fill: tp.extra ? "#c0392b" : "#3a7bd5", opacity: .88 }); });
+      segs(t0, Math.max(t1, t0 + 0.12)).forEach(function(g){ svgEl("rect", { x: g.x0, y: g.y + 128, width: Math.max(5, g.x1 - g.x0), height: 22, rx: 5, fill: tp.extra ? "#c0392b" : "#3a7bd5", opacity: .95, stroke: tp.extra ? "#7a1f16" : "none", "stroke-width": tp.extra ? 2 : 0 }).appendChild(document.createElementNS(R.geo.ns, "title")).textContent = tp.extra ? "An extra note: nothing was written here" : "What you played"; });
     });
     var lg2 = svgEl("text", { x: 6, y: R.geo.topPad + 92, "font-size": 10, fill: "#777" }); lg2.textContent = "should play";
     var lg3 = svgEl("text", { x: 6, y: R.geo.topPad + 143, "font-size": 10, fill: "#777" }); lg3.textContent = "you played";
@@ -1475,7 +1497,7 @@
     if (!R || !R.ex || R.phase === "count" || R.phase === "run") return;
     if (R.needNew && R.lv > 0) { R.needNew = false; newExercise(); } else R.needNew = false;   // you got the last one: a fresh rhythm
     var c = audio(); if (!c) { host.querySelector("#rMsg").textContent = "This computer cannot play sound here."; return; }
-    var T = R.ex.ts; R.tickMs = tickMsOf(T, R.tempo); R.taps = []; R.held = {}; R.tries++; R.reveal = false; R.score = null; R.fs = !!document.fullscreenElement; R.followUsed = false; R.colors = null; R.restColors = null;
+    if (R.warm) CAL.offset = 0; var T = R.ex.ts; R.tickMs = tickMsOf(T, R.tempo); R.taps = []; R.held = {}; R.tries++; R.reveal = false; R.score = null; R.fs = !!document.fullscreenElement; R.followUsed = false; R.colors = null; R.restColors = null;
     if (R.hadResult) { drawStaff(); R.hadResult = false; }
     drawLane();
     var a0 = c.currentTime + 0.25, perfA0;
@@ -1505,7 +1527,7 @@
   function tapDown(code, t){
     if (!R || (R.phase !== "count" && R.phase !== "run")) return;
     if (R.held[code]) return;
-    var T = R.ex.ts, tick = (t - R.w0) / R.tickMs, tp = { down: t, up: null, code: code, tick: tick };
+    t -= CAL.offset; var T = R.ex.ts, tick = (t - R.w0) / R.tickMs, tp = { down: t, up: null, code: code, tick: tick };
     toneOn("r:" + code, 261.63, 0.5, "mellow");
     R.held[code] = tp; var nb = host.querySelector("#rNow"); if (nb) nb.classList.add("on");
     if (R.phase === "run" || tick > -T.beat * 0.5) R.taps.push(tp); else { tp.count = true; }
@@ -1513,7 +1535,7 @@
   function tapUp(code, t){
     toneOff("r:" + code);
     if (!R) return; var tp = R.held[code]; if (!tp) return;
-    delete R.held[code]; tp.up = t;
+    delete R.held[code]; tp.up = t - CAL.offset;
     if (!Object.keys(R.held).length) { var nb = host.querySelector("#rNow"); if (nb) nb.classList.remove("on"); }
   }
   function abortRun(noScore){   // Backspace: stop here, what you played so far is scored as it is. Leaving full screen: just stop.
@@ -1525,6 +1547,7 @@
   function failRun(why){   // X115: leaving full screen / Escape: the try is over, it counts as failed, and this rhythm is not offered again (a new one comes next)
     if (!R || (R.phase !== "count" && R.phase !== "run")) return;
     cancelAnimationFrame(raf); toneAll(); stopSched(); R.held = {};
+    if (R.warm) { R.phase = "ready"; R.taps = []; R.held = {}; drawLane(); drawCount(-1); host.querySelector("#rMsg").innerHTML = "The warm-up stopped (" + esc(why) + ") Press any key to try it again."; setBtns(); return; }
     var lv = levels[R.lv], res = rResults(), r = res[lv.id] || (res[lv.id] = { tries: 0, passes: 0, best: null });
     r.tries++; r.h2 = (r.h2 || []).concat(0).slice(-20); if (r.best == null) r.best = 0; ls("rhythm-results", JSON.stringify(res));
     evt("ss-attempt", { title: "Rhythm: " + lv.name, mode: "practice", ok: false });
@@ -1532,24 +1555,67 @@
     drawLane(); drawCount(-1); var h = host; h.querySelector("#rMsg").innerHTML = '<span class="big no">Try failed.</span> ' + esc(why) + (R.lv > 0 ? " You get a new rhythm next." : ""); h.querySelector("#rDet").textContent = "";
     var ph = R.geo && R.geo.ph; if (ph) ph.setAttribute("visibility", "hidden"); setBtns(); drawLevels();
   }
-  function tryAgain(){ if (!R || !R.ex) return; R.phase = "ready"; startRun(); }
+  function tryAgain(){ if (!R || !R.ex) return; if (R.afterWarm) { R.afterWarm = false; setLevel(R.lv); return; } if (R.warm && !R.ex) return; R.phase = "ready"; startRun(); }
+  function startWarm(){   // one measure of four quarter notes, once per page load: it measures how far this keyboard / speaker is from the clicks
+    var r = generateExercise(0, { measures: 4 }); if (!r || !r.ex) { CAL.done = true; return; }
+    r.ex.measures = r.ex.measures.slice(0, 1); R.ex = r.ex; R.warm = true; R.afterWarm = false; R.tempo = 60; host.querySelector("#rTempo").textContent = 60; R.phase = "ready"; R.taps = []; R.held = {}; R.tries = 0; CAL.offset = 0;
+    host.querySelector("#rTitle").innerHTML = '<b>Warm-up</b> &middot; play the four quarter notes with the clicks (this happens once each time the page opens)';
+    R.colors = null; R.restColors = null; drawStaff(); showReady(); host.querySelector("#rMsg").innerHTML = 'Warm-up: you hear one measure of counting, then play the four notes. The game uses it to line up with your keyboard.'; setBtns(); drawLevels();
+    var tc = host.querySelector("#rCal"); if (tc) tc.textContent = "";
+  }
+  function finishWarm(S){
+    var h = host, d = S.res.filter(function(r){ return r.dt != null; }).map(function(r){ return r.dt; }).sort(function(a, b){ return a - b; });
+    if (d.length >= 3) {
+      var med = d[Math.floor(d.length / 2)]; CAL.offset = Math.max(-250, Math.min(250, Math.round(med))); CAL.done = true; R.warm = false; R.afterWarm = true;
+      h.querySelector("#rMsg").innerHTML = '<span class="big okc">Warm-up done.</span> Press any key to start level ' + (R.lv + 1) + '.';
+      h.querySelector("#rDet").textContent = isTeacher() ? "Teacher: your taps ran " + CAL.offset + " ms " + (CAL.offset >= 0 ? "late" : "early") + " on the warm-up; every later try is shifted by that." : "";
+    } else {
+      CAL.fails++; CAL.offset = 0;
+      if (CAL.fails >= 3) { CAL.done = true; R.warm = false; R.afterWarm = true; h.querySelector("#rMsg").innerHTML = "The warm-up could not hear enough taps, so it is skipped. Press any key to start."; }
+      else h.querySelector("#rMsg").innerHTML = 'I only heard ' + d.length + ' of the 4 notes. Press any key to try the warm-up again.';
+      h.querySelector("#rDet").textContent = "";
+    }
+    var tc = h.querySelector("#rCal"); if (tc) tc.textContent = CAL.done ? " calibration: " + (CAL.offset >= 0 ? "+" : "") + CAL.offset + " ms" : "";
+    setBtns();
+  }
 
   // ---- scoring: key DOWN against the expected note start, key UP against the expected note end ----
+  // X116: which tap belongs to which note is decided for the whole try at once (the cheapest fit overall), not note by note.
+  // A tap far from every note is an extra. If one tap is exactly as far from two notes, it is counted as LATE for the earlier note (students drift late far more often than early).
+  function matchTaps(evs, taps, tm, close, T){
+    var n = evs.length, m = taps.length, K = close, MISS = K, EX = K, INF = 1e12, i, j;
+    var W = evs.map(function(e, k){ var pg = k > 0 ? (e.abs - evs[k - 1].abs) * tm : 2 * T.beat * tm, ng = evs[k + 1] ? (evs[k + 1].abs - e.abs) * tm : 2 * T.beat * tm; return Math.max(close, Math.min(650, 0.48 * Math.min(pg, ng))); });
+    function cost(a, b){ var d = taps[b].down - (R.w0 + evs[a].abs * tm), ad = Math.abs(d); return ad <= W[a] ? ad + (d < 0 ? 0.5 : 0) : INF; }
+    var dp = [], k2; for (i = 0; i <= n; i++) { dp.push(new Array(m + 1)); }
+    for (i = 0; i <= n; i++) for (j = 0; j <= m; j++) {
+      if (i === 0) { dp[i][j] = j * EX; continue; } if (j === 0) { dp[i][j] = i * MISS; continue; }
+      var c = cost(i - 1, j - 1), best = dp[i - 1][j] + MISS; if (dp[i][j - 1] + EX < best) best = dp[i][j - 1] + EX; if (c < INF && dp[i - 1][j - 1] + c <= best) best = dp[i - 1][j - 1] + c; dp[i][j] = best;
+    }
+    var out = []; for (k2 = 0; k2 < n; k2++) out.push(-1);
+    i = n; j = m;
+    while (i > 0 && j > 0) {
+      var cc = cost(i - 1, j - 1);
+      if (cc < INF && Math.abs(dp[i][j] - (dp[i - 1][j - 1] + cc)) < 1e-6) { out[i - 1] = j - 1; i--; j--; }
+      else if (Math.abs(dp[i][j] - (dp[i - 1][j] + MISS)) < 1e-6) i--;
+      else j--;
+    }
+    return out;
+  }
   function score(){
     var T = R.ex.ts, E = R.E, tm = R.tickMs, J0 = J(), good = Math.max(J0.startMin, Math.min(J0.startMax, 0.5 * tm)), close = Math.min(260, good * J0.closeMult), used = {}, res = [];
     var taps = R.taps.filter(function(t){ return !t.count; });
     var pts = 0, total = 0, holdN = 0, holdOk = 0, onN = 0, onOk = 0, dts = [];
     taps.sort(function(a, b){ return a.down - b.down; });
-    var lastJ = -1;
+    var asg = matchTaps(E.evs, taps, tm, close, T);
     E.evs.forEach(function(e, i){
       var exp = R.w0 + e.abs * tm, best = -1, bd = 1e9;
       var pg = i > 0 ? (e.abs - E.evs[i - 1].abs) * tm : 2 * T.beat * tm, ng = E.evs[i + 1] ? (E.evs[i + 1].abs - e.abs) * tm : 2 * T.beat * tm;
       var W = Math.max(close, Math.min(650, 0.48 * Math.min(pg, ng)));   // X115: a tap this near is "that note, played early / late", not just "wrong"
-      for (var j = lastJ + 1; j < taps.length; j++) { var d0 = Math.abs(taps[j].down - exp); if (taps[j].down - exp > W) break; if (d0 <= W && d0 < bd) { bd = d0; best = j; } }
+      best = asg[i]; if (best >= 0) bd = Math.abs(taps[best].down - exp);
       var r = { i: i, onset: "miss", hold: "na", dt: null };
       total += 1; onN++;
       if (best >= 0) {
-        used[best] = true; lastJ = best; var tp = taps[best], dt = tp.down - exp; r.dt = Math.round(dt); tp.mi = i; dts.push(dt);
+        used[best] = true; var tp = taps[best], dt = tp.down - exp; r.dt = Math.round(dt); tp.mi = i; dts.push(dt);
         r.de = Math.round((tp.up == null ? (R.w0 + R.endTick * tm) : tp.up) - (exp + e.ticks * tm));
         if (bd <= good) { r.onset = "good"; pts += 1; onOk++; } else if (bd <= close) { r.onset = "close"; pts += 0.5; } else r.onset = "off";
         if (r.onset !== "off" && (e.ticks >= J0.holdMin || e.gapNext)) {
@@ -1575,7 +1641,9 @@
     R.colors = {}; R.restColors = {};
     S.res.forEach(function(r){ var e = R.E.evs[r.i], k = r.onset === "good" && (r.hold === "good" || r.hold === "na") ? "good" : r.onset === "miss" ? "miss" : "close"; r.k = k; R.colors[e.abs] = COL[k]; });
     R.E.rests.forEach(function(rs){ var bad = R.taps.some(function(tp){ if (tp.count) return false; var tk = (tp.down - R.w0) / R.tickMs; return tp.extra && tk >= rs.abs - 0.5 && tk < rs.abs + rs.ticks - 0.5; }); R.restColors[rs.abs] = bad ? COL.miss : COL.good; });
-    R.hadResult = true; R.score = S; R.reveal = true; drawLane(); drawStaff();   // the written notes turn green / yellow / red, and the boxes (should play) and bars (you played) sit directly under them
+    R.hadResult = true; R.score = S; R.reveal = true; drawLane(); drawStaff();
+    if (R.warm || R.afterWarm) { finishWarm(S); h.querySelector("#rStart").style.display = "none"; h.querySelector("#rAgain").style.display = "none"; h.querySelector("#rNext").style.display = "none"; var ph0 = h.querySelector("#rPh"); if (ph0) ph0.style.display = "none"; R.geo.ph.setAttribute("visibility", "hidden"); drawCount(-1); R.needNew = false; return; }   // the warm-up is not a scored try
+    // the written notes turn green / yellow / red, and the boxes (should play) and bars (you played) sit directly under them
     var pct = Math.round(S.ratio * 100);
     h.querySelector("#rMsg").innerHTML = S.pass ? '<span class="big okc">Got it! ' + pct + '%</span>' + (cleared(lv) ? ' <b>Level cleared!</b>' : "") : '<span class="big no">Not yet. ' + pct + '%</span>';
     var bits = ["Notes started on time: <b>" + S.onOk + " of " + S.onN + "</b>"];
@@ -1637,7 +1705,7 @@
     };
     var ku = function(ev){ if (!host || host.getAttribute("data-game") !== "songs") return; var m = SG.down[ev.code]; if (m == null) return; ev.preventDefault(); ev.stopPropagation(); delete SG.down[ev.code]; release(m, "k:" + ev.code); };
     window.addEventListener("keydown", kd, true); window.addEventListener("keyup", ku, true);
-    var rz = function(){ try { sizeKb(); } catch (e) {} }; window.addEventListener("resize", rz);
+    var rz = function(){ try { sizeKb(); } catch (e) {} }; window.addEventListener("resize", rz); try { var kbm = host.querySelector("#sKb").parentNode; var ro = new ResizeObserver(rz); ro.observe(kbm); ro.observe(host.querySelector("#sStaff")); var cl1 = cleanup; } catch (e) {}
     cleanup = function(){ window.removeEventListener("resize", rz); window.removeEventListener("keydown", kd, true); window.removeEventListener("keyup", ku, true); try { if (SG && SG.midi) SG.midi.inputs.forEach(function(i){ i.onmidimessage = null; }); } catch (e) {} SG = null; };
     // MIDI is off for now (no permission pop-up for students); setupMidi() is kept for later
     var last = Number(lg("songs-last") || 0); if (!(last >= 0 && last < list.length)) last = 0;
@@ -1650,14 +1718,14 @@
       if (SG !== my) return; my.midi = acc;
       function wire(){ var n = 0; acc.inputs.forEach(function(inp){ n++; inp.onmidimessage = function(ev){
         var d = ev.data; if (!d || d.length < 2 || !SG) return; var st = d[0] & 0xf0, note = d[1], vel = d.length > 2 ? d[2] : 0;
-        if (st === 0x90 && vel > 0) { if (SG.keys[note]) press(note, "m:" + note); else toneOn("s:m:" + note, freqOf(note), 0.22, "piano"); }
+        if (st === 0x90 && vel > 0) { if (SG.keys[note]) press(note, "m:" + note); else toneOn("s:m:" + note, freqOf(note), 0.5, "mellow"); }
         else if (st === 0x80 || (st === 0x90 && vel === 0)) { release(note, "m:" + note); }
       }; }); if (el) el.textContent = n ? "\u266B Piano connected" : ""; }
       wire(); acc.onstatechange = wire;
     }).catch(function(){});
   }
   function press(midi, id){
-    toneOn("s:" + id, freqOf(midi), 0.22, "piano");
+    toneOn("s:" + id, freqOf(midi), 0.5, "mellow");
     var el = host && host.querySelector('#sKb [data-m="' + midi + '"]'); if (el) el.classList.add("down");
   }
   function release(midi, id){
@@ -1683,7 +1751,7 @@
     var kb = host.querySelector("#sKb"), whites = [], i, h = "";
     for (var m0 = SG.kbLo; m0 <= SG.kbHi; m0++) if (WHITE_IN_OCT.indexOf(((m0 % 12) + 12) % 12) >= 0) whites.push(m0);
     SG.whites = whites; var n = whites.length, w = 100 / n;
-    whites.forEach(function(m, i){ h += '<div class="wk' + (m % 12 === 0 ? " c" + (Math.floor(m / 12) - 1) : "") + '" data-m="' + m + '" style="left:' + (i * w) + '%;width:' + w + '%"><u class="nm">' + "CDEFGAB"[[0, 2, 4, 5, 7, 9, 11].indexOf(((m % 12) + 12) % 12)] + (m % 12 === 0 ? (Math.floor(m / 12) - 1) : "") + '</u><span></span></div>'; });
+    whites.forEach(function(m, i){ h += '<div class="wk' + (m % 12 === 0 ? " c" + (Math.floor(m / 12) - 1) : "") + '" data-m="' + m + '" style="left:' + (i * w) + '%;width:' + w + '%"><u class="nm">' + (isTeacher() ? "CDEFGAB"[[0, 2, 4, 5, 7, 9, 11].indexOf(((m % 12) + 12) % 12)] + (m % 12 === 0 ? (Math.floor(m / 12) - 1) : "") : "") + '</u><span></span></div>'; });
     whites.forEach(function(m, i){ var off = m % 12; if (BLACK_AFTER[off] != null && i < n - 1 && whites[i + 1] === m + 2) h += '<div class="bk" data-m="' + (m + 1) + '" style="left:' + ((i + 1) * w - w * 0.3) + '%;width:' + (w * 0.6) + '%"><span></span></div>'; });
     kb.innerHTML = h; sizeKb();
     var down = function(ev){ var k = ev.target.closest && ev.target.closest("[data-m]"); if (!k) return; ev.preventDefault(); var m = +k.getAttribute("data-m"), id = "p:" + ev.pointerId; SG.ptr[ev.pointerId] = m; press(m, id); try { kb.setPointerCapture(ev.pointerId); } catch (e) {} };
@@ -1696,10 +1764,11 @@
     });
   }
   function sizeKb(){   // X115: as tall as fits, up to the height of a real piano key (about 6.4 times its width)
-    if (!host) return; var kb = host.querySelector("#sKb"), main = kb && kb.parentNode; if (!kb || !main || !SG || !SG.whites) return;
-    var kw = kb.clientWidth / Math.max(1, SG.whites.length), ideal = Math.round(kw * 6.4), used = 0;
+    if (!host) return; var kb = host.querySelector("#sKb"), main = kb && kb.parentNode; if (!kb || !main || !SG) return;
+    var kw = kb.clientWidth / Math.max(1, kb.querySelectorAll(".wk").length), ideal = Math.round(kw * 6.4), used = 0;
     [].forEach.call(main.children, function(c){ if (c !== kb) used += c.offsetHeight + 8; });
-    var avail = main.clientHeight - used - 12; kb.style.height = Math.max(150, Math.min(ideal, avail)) + "px";
+    var avail = main.clientHeight - used - 34;   /* X116: leaves a little room under the keys */
+    kb.style.height = Math.max(150, Math.min(ideal, avail)) + "px";
   }
   function markKeys(){   // the letters that play each key right now
     if (!host) return; var kb = host.querySelector("#sKb"); if (!kb) return;

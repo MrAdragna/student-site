@@ -60,7 +60,8 @@
   }
   function reloadWhenIdle(){
     clearInterval(reloadWait);
-    reloadWait = setInterval(function(){ var s = st(); if (!s || !s.playing) { clearInterval(reloadWait); location.reload(); } }, 4000);   // never in the middle of a question
+    reloadWait = setInterval(function(){ var s = st(); if (document.fullscreenElement || document.webkitFullscreenElement || (window.ssGameBusy && window.ssGameBusy())) return;   /* X116: a reload always drops full screen, so wait until the student is out of it (the "newer version" bar still offers a refresh) */
+      if (!s || !s.playing) { clearInterval(reloadWait); location.reload(); } }, 4000);   // never in the middle of a question
   }
   // X112: the site changed on GitHub (a new publish) while this page was open: offer a refresh (never forced, so a question in progress is not lost)
   var verBar = null;

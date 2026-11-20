@@ -1,4 +1,4 @@
-/* student-games.js (X119: judging bands + credit per band, extra-tap cap, "Not tried" for count-in exits, calibration saved once per computer; X112: Songs are drawn by the Workbook's own renderer (extracted from Workbook.js 4.67), home-row piano, due/current badges, locked extras (teacher PIN), last-5 dots, follower line per level, live tap bars, teacher "count as right / wrong"; X111, c13, 19 Nov 2026; X111 = games sit under the game bar, Songs grouped by unit with a keyboard that fits the song + MIDI, Rhythm: 4 measures at tempo 60, count-in above the music, results hidden until you finish, optional follower line, levels unlock in order, timing numbers from the teacher panel). Two extra games for the student site, loaded by student-ui.js:
+/* student-games.js (X120: judging bands + credit per band, extra-tap cap, "Not tried" for count-in exits, calibration saved once per computer; X112: Songs are drawn by the Workbook's own renderer (extracted from Workbook.js 4.67), home-row piano, due/current badges, locked extras (teacher PIN), last-5 dots, follower line per level, live tap bars, teacher "count as right / wrong"; X111, c13, 19 Nov 2026; X111 = games sit under the game bar, Songs grouped by unit with a keyboard that fits the song + MIDI, Rhythm: 4 measures at tempo 60, count-in above the music, results hidden until you finish, optional follower line, levels unlock in order, timing numbers from the teacher panel). Two extra games for the student site, loaded by student-ui.js:
    RHYTHM  = tap the rhythm on the keyboard (Space or any key; key down AND key up are judged). The rhythms come from the teacher's RhythmRandomizer levels
              (published in the site settings as `rhythm`; without them the 13 built-in RhythmRandomizer levels are used). The generator below is copied from
              RhythmRandomizer.js v29 (registries, level model, fits / fillMeasure / generateOnce); nothing else of that app is used.
@@ -1322,6 +1322,7 @@
     else body = p;
     return '<svg viewBox="0 0 22 28" width="28" height="38" style="vertical-align:middle" aria-label="rest">' + body + '</svg>';
   }
+  function findItem(aid){ return null; }   /* X120: the student site has no assignment tree; sizes fall back to the exercise/global size (this was the "findItem is not defined" that stopped the Songs letters) */
   function scaleOf(ex){ var q = scaleParts(ex); return q.ex * q.cat * q.unit * q.all / 1e8; }
   function scaleParts(ex){
     var it = ex && ex.assignmentId ? findItem(ex.assignmentId) : null, u = it ? it.unit.id : "", t = it && it.a ? (it.a.typeId || "") : "";
@@ -1397,12 +1398,12 @@
     ".ssg-lane { position: relative; height: 112px; border: 2px solid #eee; border-radius: 12px; background: #fafafa; overflow: hidden; } .ssg-lane .cin { position: absolute; top: 0; bottom: 0; background: #eceaff; } .ssg-lane .bl { position: absolute; top: 0; bottom: 0; width: 1px; background: #e2e2e2; } .ssg-lane .ml { background: #bbb; width: 2px; }" +
     ".ssg-lane .ex { position: absolute; top: 10px; height: 34px; border: 2px solid #8a85c0; background: #fff; border-radius: 6px; box-sizing: border-box; font-size: 11px; font-weight: 800; text-align: center; line-height: 30px; overflow: hidden; white-space: nowrap; } .ssg-lane .ex.rest { top: 20px; height: 14px; border: 1px dashed #ccc; background: none; }" +
     ".ssg-lane .ex.good { border-color: #1a8a4a; background: #d9f3e3; } .ssg-lane .ex.close { border-color: #d89a00; background: #fff1c7; } .ssg-lane .ex.miss { border-color: #c0392b; background: #fbdcd8; }" +
-    ".ssg-lane .ac { position: absolute; top: 56px; height: 30px; border-radius: 6px; background: #3a7bd5; opacity: .85; box-sizing: border-box; } .ssg-lane .ac.extra { background: #c0392b; } .ssg-lane .ph { position: absolute; top: 0; bottom: 0; width: 3px; background: #e9a31a; z-index: 3; }" +
+    ".ssg-lane .ac { position: absolute; top: 56px; height: 30px; border-radius: 6px; background: #2fa866; opacity: .85; box-sizing: border-box; } .ssg-lane .ac.extra { background: #c0392b; } .ssg-lane .ph { position: absolute; top: 0; bottom: 0; width: 3px; background: #e9a31a; z-index: 3; }" +
     ".ssg-lane .lab { position: absolute; bottom: 3px; font-size: 11px; font-weight: 700; color: #555; transform: translateX(-50%); white-space: nowrap; }" +
     ".ssg-msg { font-size: 17px; font-weight: 700; min-height: 26px; } .ssg-msg .big { font-size: 28px; } .ssg-msg .okc { color: #1a8a4a; } .ssg-msg .no { color: #c0392b; } .ssg-sub { font-size: 14px; color: #555; font-weight: 600; line-height: 1.5; }" +
     ".ssg-pad { border: 3px dashed #3a2f8f; border-radius: 14px; padding: 14px; text-align: center; font-weight: 800; color: #3a2f8f; background: #f4f2ff; cursor: pointer; user-select: none; touch-action: none; } .ssg-pad.down { background: #3a2f8f; color: #fff; }" +
-    "#rStart, #rAgain { display: none !important; } .ssg-btn[disabled] { opacity: .35; cursor: not-allowed; } .ssg-lane .nowbox { position: absolute; left: 10px; right: 10px; top: 16px; height: 64px; border: 3px solid #cfcbe8; background: #fff; border-radius: 12px; font-weight: 800; font-size: 20px; text-align: center; line-height: 58px; color: #b9b5d8; transition: background .06s; } .ssg-lane .nowbox.on { background: #3a7bd5; border-color: #2a5aa8; color: #fff; } .nocount { margin-top: 8px; padding: 10px 14px; border-radius: 12px; background: #fff0c7; border: 3px solid #e9a31a; font-size: 20px; font-weight: 800; color: #8a4b00; } .ssg-btns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }" +
-    ".ssg-kb { position: relative; height: 170px; user-select: none; touch-action: none; margin-top: auto; flex: none; } .ssg-kb .wk { position: absolute; top: 0; bottom: 0; border: 1px solid #555; background: #fff; border-radius: 0 0 6px 6px; box-sizing: border-box; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; font-size: 12px; font-weight: 800; color: #3a2f8f; } .ssg-kb .bk { position: absolute; top: 0; height: 62%; background: #222; border-radius: 0 0 5px 5px; z-index: 2; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 5px; font-size: 11px; font-weight: 800; color: #fff; box-sizing: border-box; } .ssg-kb .wk.down { background: #cfe3ff; } .ssg-kb .bk.down { background: #3a7bd5; } .ssg-kb .c4 { background: #f7f4ff; } .ssg-kb { margin-bottom: 22px; } .ssg-kb .wk .nm { position: absolute; top: 5px; left: 0; right: 0; text-align: center; font-size: 11px; font-style: normal; text-decoration: none; color: #9a9ab0; font-weight: 700; } .ssg-kb .wk.c3 .nm, .ssg-kb .wk.c4 .nm, .ssg-kb .wk.c5 .nm, .ssg-kb .wk.c2 .nm, .ssg-kb .wk.c6 .nm { color: #3a2f8f; }" +
+    "#rStart, #rAgain { display: none !important; } .ssg-btn[disabled] { opacity: .35; cursor: not-allowed; } .ssg-lane .nowbox { position: absolute; left: 10px; right: 10px; top: 16px; height: 64px; border: 3px solid #cfcbe8; background: #fff; border-radius: 12px; font-weight: 800; font-size: 20px; text-align: center; line-height: 58px; color: #b9b5d8; transition: background .06s; } .ssg-lane .nowbox.on { background: #2fa866; border-color: #2a5aa8; color: #fff; } .nocount { margin-top: 8px; padding: 10px 14px; border-radius: 12px; background: #fff0c7; border: 3px solid #e9a31a; font-size: 20px; font-weight: 800; color: #8a4b00; } .ssg-btns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }" +
+    ".ssg-kb { position: relative; height: 170px; user-select: none; touch-action: none; margin-top: auto; flex: none; } .ssg-kb .wk { position: absolute; top: 0; bottom: 0; border: 1px solid #555; background: #fff; border-radius: 0 0 6px 6px; box-sizing: border-box; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; font-size: 12px; font-weight: 800; color: #3a2f8f; } .ssg-kb .bk { position: absolute; top: 0; height: 62%; background: #222; border-radius: 0 0 5px 5px; z-index: 2; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 5px; font-size: 11px; font-weight: 800; color: #fff; box-sizing: border-box; } .ssg-kb .wk.down { background: #cfe3ff; } .ssg-kb .bk.down { background: #2fa866; } .ssg-kb .c4 { background: #f7f4ff; } .ssg-kb { margin-bottom: 22px; } .ssg-kb .wk .nm { position: absolute; top: 5px; left: 0; right: 0; text-align: center; font-size: 11px; font-style: normal; text-decoration: none; color: #9a9ab0; font-weight: 700; } .ssg-kb .wk.c3 .nm, .ssg-kb .wk.c4 .nm, .ssg-kb .wk.c5 .nm, .ssg-kb .wk.c2 .nm, .ssg-kb .wk.c6 .nm { color: #3a2f8f; }" +
     ".ssg-count span { display: inline-block; min-width: 84px; text-align: center; padding: 4px 10px 6px; border-radius: 14px; border: 2px solid transparent; } .ssg-count span.on { background: #3a2f8f; color: #fff; border-color: #3a2f8f; transform: none; } .ssg-count span.on small { color: #d9d4ff; } .ssg-dots { display: inline-flex; gap: 3px; vertical-align: middle; } .ssg-dots i { width: 10px; height: 10px; border-radius: 50%; background: #ddd; display: inline-block; } .ssg-dots i.y { background: #1a8a4a; } .ssg-dots i.n { background: #c0392b; } .ssg-dots i.o { background: #e9b320; } .bdg { display: inline-block; font-size: 10px; font-weight: 800; border-radius: 8px; padding: 0 6px; margin-right: 3px; text-transform: uppercase; } .bdg.late { background: #fbdcd8; color: #a3281a; } .bdg.now { background: #d9f3e3; color: #14683a; } .ssg-item.lk { opacity: .5; } .nocount { margin-top: 4px; font-size: 14px; font-weight: 700; color: #a35a00; } .ssg-ver { font-size: 11px; color: #999; font-weight: 600; } " +
     ".ssg-grp { font-size: 12px; font-weight: 800; color: #6b64a8; text-transform: uppercase; letter-spacing: .04em; margin: 8px 2px 0; } .ssg-item[disabled] { opacity: .45; cursor: not-allowed; } [data-ssg].on { outline: 3px solid #3a2f8f; }" +
     "@media (max-width: 900px) { .ssg-side { width: 150px; } }";
@@ -1496,7 +1497,7 @@
   function openRhythm(){
     if (!window.VexFlow) { alert("The music drawing code did not load. Reload the page."); return; }
     if (!levels.length) loadLevels();
-    var body = openHost("rhythm", "Rhythm", '<span class="ssg-ver">games X119</span>' + '<span class="ctl">Tempo <button type="button" class="ssg-btn sm" id="rSlow">&minus;</button><b id="rTempo"></b><button type="button" class="ssg-btn sm" id="rFast">+</button></span>' +
+    var body = openHost("rhythm", "Rhythm", '<span class="ssg-ver">games X120</span>' + '<span class="ctl">Tempo <button type="button" class="ssg-btn sm" id="rSlow">&minus;</button><b id="rTempo"></b><button type="button" class="ssg-btn sm" id="rFast">+</button></span>' + '<span class="ctl"><label><input type="checkbox" id="rFollow"> Follow notes</label></span>' +
       '<span class="ctl" id="rTeach" style="display:none" title="Teacher only">Teacher: <span id="rCal"></span> <button type="button" class="ssg-btn sm" id="rRewarm">Redo warm-up</button> <label><input type="checkbox" id="rOpenAll"> open every level</label> <button type="button" class="ssg-btn sm" id="rResetLv" title="Forget every level\'s tries on this computer">Reset all levels</button> <button type="button" class="ssg-btn sm" id="rResetOne" title="Forget the tries of this level">Reset this level</button> <button type="button" class="ssg-btn sm" id="rClearOne" title="Count this level as cleared">Clear this level</button></span>');
     body.innerHTML = '<div class="ssg-side" id="rLevels"></div><div class="ssg-main"><div class="ssg-sub" id="rTitle"></div><div class="ssg-count" id="rCount"></div><div class="ssg-staff" id="rStaff"></div><div class="ssg-lane" id="rLane"></div>' +
       '<div class="ssg-msg" id="rMsg"></div><div class="ssg-sub" id="rDet"></div><div class="ssg-btns"><button type="button" class="ssg-btn primary" id="rStart">Start</button><button type="button" class="ssg-btn" id="rAgain" style="display:none">Try again</button><button type="button" class="ssg-btn" id="rStop" disabled>Backspace to stop</button><button type="button" class="ssg-btn" id="rNew">N for new rhythm</button><button type="button" class="ssg-btn" id="rNext" style="display:none">Next level</button></div>' +
@@ -1505,6 +1506,7 @@
     R = { lv: last, tempo: 0, phase: "ready", taps: [], sync: 0, click: true, follow: false, held: {}, ex: null };
     var h = host;
     function $(id){ return h.querySelector("#" + id); }
+    $("rFollow").onchange = function(){ R.followOn = this.checked; if (!R.followOn && R.geo) R.geo.ph.setAttribute("visibility", "hidden"); };   // X120: a moving bar over the written notes, off by default
     $("rSlow").onclick = function(){ R.tempo = Math.max(36, R.tempo - 4); $("rTempo").textContent = R.tempo; if (R.phase === "ready" || R.phase === "done") { R.phase = "ready"; showReady(); } };
     $("rFast").onclick = function(){ R.tempo = Math.min(140, R.tempo + 4); $("rTempo").textContent = R.tempo; if (R.phase === "ready" || R.phase === "done") { R.phase = "ready"; showReady(); } };
     $("rStart").onclick = function(){ startRun(); this.blur(); };
@@ -1600,7 +1602,7 @@
     var renderer = new VF.Renderer(hostEl, VF.Renderer.Backends.SVG); renderer.resize(W, H);
     var ctx = renderer.getContext(), svg = hostEl.querySelector("svg");
     if (svg) { svg.setAttribute("viewBox", "0 0 " + W + " " + H); svg.removeAttribute("width"); svg.removeAttribute("height"); svg.style.width = "100%"; svg.style.height = "auto"; }
-    var refs = [], mEnd = [], absBase = 0;
+    var refs = [], mEnd = [], mStart = [], absBase = 0;
     ex.measures.forEach(function(ms, mi){
       var lay = layout[mi], y = topPad + lay.row * rowH, stave = new VF.Stave(lay.x, y, lay.w);
       stave.setConfigForLines([{ visible: false }, { visible: false }, { visible: true }, { visible: false }, { visible: false }]);
@@ -1622,7 +1624,7 @@
       new VF.Formatter().joinVoices([voice]).formatToStave([voice], stave); voice.draw(ctx, stave); beams.forEach(function(b){ b.setContext(ctx).draw(); });
       var base = refs.length - ms.length;
       notes.forEach(function(n, k){ var cx; try { cx = (n.getNoteHeadBeginX() + n.getNoteHeadEndX()) / 2; } catch (e) { cx = n.getAbsoluteX() + 6; } refs[base + k].cx = cx; if (fullRest) { try { var rel = n.getSVGElement(); if (rel) rel.setAttribute("transform", "translate(0,1.5)"); } catch (e) {} } });
-      mEnd[mi] = stave.getNoteEndX(); absBase += T.ticks;
+      mEnd[mi] = stave.getNoteEndX(); mStart[mi] = (!lay.first && mi > 0) ? stave.getX() : null; absBase += T.ticks;
     });
     for (var i = 0; i < refs.length - 1; i++) {
       var a = refs[i], b = refs[i + 1]; if (!a.part.tiedNext) continue;
@@ -1639,7 +1641,7 @@
       return { x: r.cx + (endX - r.cx) * f, y: r.y };
     }
     var ns = "http://www.w3.org/2000/svg", ph = document.createElementNS(ns, "line"); ph.setAttribute("class", "ssgph"); ph.setAttribute("stroke", "#e9a31a"); ph.setAttribute("stroke-width", "4"); ph.setAttribute("stroke-linecap", "round"); ph.setAttribute("visibility", "hidden"); svg.appendChild(ph);
-    R.geo = { posAt: posAt, ph: ph, total: T.ticks * ex.measures.length, layout: layout, mEnd: mEnd, rowH: rowH, topPad: topPad, svg: svg, ns: ns, W: W };
+    R.geo = { posAt: posAt, ph: ph, total: T.ticks * ex.measures.length, layout: layout, mEnd: mEnd, mStart: mStart, rowH: rowH, topPad: topPad, svg: svg, ns: ns, W: W };
     if (R.reveal && R.score) drawUnder();
   }
 
@@ -1648,7 +1650,8 @@
     var G = R.geo, T = R.ex.ts, out = [], total = G.total; a0 = Math.max(0, a0); a1 = Math.min(total, a1); if (a1 <= a0) return out;
     for (var m = Math.floor(a0 / T.ticks); m * T.ticks < a1 && m < R.ex.measures.length; m++) {
       var lo = Math.max(a0, m * T.ticks), hi = Math.min(a1, (m + 1) * T.ticks), y = G.topPad + G.layout[m].row * G.rowH;
-      var SH = 10, x0 = G.posAt(lo).x - SH, x1 = hi >= (m + 1) * T.ticks ? G.mEnd[m] - 4 : G.posAt(hi).x - SH;   // X116: posAt gives the middle of a note head; boxes start at its left edge
+      var SH = 10, x0 = G.posAt(lo).x - SH, x1 = hi >= (m + 1) * T.ticks ? G.mEnd[m] - 4 : G.posAt(hi).x - SH;
+      if (lo === m * T.ticks && G.mStart && G.mStart[m] != null && x0 > G.mStart[m] + 6) x0 -= 0.65 * (x0 - (G.mStart[m] + 4));   // X120: the first box of a measure reaches back toward the bar line so its width is closer to its real length   // X116: posAt gives the middle of a note head; boxes start at its left edge
       out.push({ x0: x0, x1: Math.max(x0 + 3, x1), y: y });
     }
     return out;
@@ -1657,9 +1660,9 @@
   function drawUnder(){
     var S = R.score, E = R.E, T = R.ex.ts, teacher = isTeacher();
     var FILL = FILL5, EDGE = COL5;
-    E.rests.forEach(function(rs){ var bad = R.restColors && R.restColors[rs.abs] === "#c0392b"; segs(rs.abs, rs.abs + rs.ticks).forEach(function(g, gi){ svgEl("rect", { x: g.x0, y: g.y + 96, width: g.x1 - g.x0, height: 26, rx: 5, fill: bad ? "#fbdcd8" : "#e3f4e9", stroke: bad ? "#c0392b" : "#1a8a4a", "stroke-dasharray": "4 3", "stroke-width": 1.5 }); if (gi === 0) { var rt = svgEl("text", { x: g.x0 + (g.x1 - g.x0) / 2, y: g.y + 113, "text-anchor": "middle", "font-size": 12, "font-weight": 800, fill: bad ? "#c0392b" : "#1a8a4a", "pointer-events": "none" }); rt.textContent = bad ? "\u2717" : "\u2713"; } }); });
+    E.rests.forEach(function(rs){ var rc = R.restColors && R.restColors[rs.abs], bad = rc === "#c0392b", na = rc === "#8a8a8a"; segs(rs.abs, rs.abs + rs.ticks).forEach(function(g, gi){ svgEl("rect", { x: g.x0, y: g.y + 96, width: g.x1 - g.x0, height: 26, rx: 5, fill: bad ? "#fbdcd8" : na ? "#eeeeee" : "#e3f4e9", stroke: bad ? "#c0392b" : na ? "#999" : "#1a8a4a", "stroke-dasharray": "4 3", "stroke-width": 1.5 }); if (gi === 0 && !na) { var rt = svgEl("text", { x: g.x0 + (g.x1 - g.x0) / 2, y: g.y + 113, "text-anchor": "middle", "font-size": 12, "font-weight": 800, fill: bad ? "#c0392b" : "#1a8a4a", "pointer-events": "none" }); rt.textContent = bad ? "\u2717" : "\u2713"; } }); });
     S.res.forEach(function(r){
-      var e = E.evs[r.i], early = r.dt != null && r.dt < 0, words = r.onset === "miss" ? ["missed"] : r.onset === "real" ? [early ? "way too early" : "way too late"] : r.onset === "ear" ? [early ? "too early" : "too late"] : [r.onset === "lit" ? (early ? "a bit early" : "a bit late") : "", r.hold === "short" ? "let go early" : r.hold === "long" ? "held long" : ""].filter(Boolean);
+      var e = E.evs[r.i], early = r.dt != null && r.dt < 0, words = r.split && r.onset === "good" ? ["played twice"] : r.onset === "miss" ? ["missed"] : r.onset === "real" ? [early ? "way too early" : "way too late"] : r.onset === "ear" ? [early ? "too early" : "too late"] : [r.onset === "lit" ? (early ? "a bit early" : "a bit late") : "", r.hold === "short" ? "let go early" : r.hold === "long" ? "held long" : ""].filter(Boolean);
       var full = teacher && r.dt != null ? "start " + (r.dt > 0 ? "+" : "") + r.dt + " end " + (r.de > 0 ? "+" : "") + r.de : (words.length ? words.join(", ") : "\u2713");
       var title = "Start: " + (r.dt == null ? "missed" : (r.dt > 0 ? r.dt + " ms late" : (-r.dt) + " ms early")) + (r.hold === "na" ? "" : "; end: " + (r.hold === "good" ? "good" : r.hold === "short" ? "you let go too early" : "you held too long"));
       segs(e.abs, e.abs + e.ticks).forEach(function(g, gi){
@@ -1675,17 +1678,18 @@
       var t0 = (tp.down - R.w0) / R.tickMs, t1 = ((tp.up == null ? tp.down + 80 : tp.up) - R.w0) / R.tickMs;
       if (tp.extra && t0 < 0) { preT.push(tp); return; }          // X119: taps in the last beat of the count-in sit in the space before the first note
       if (tp.extra && t0 >= totalT) { postT.push(tp); return; }   // X119: taps after the exercise ended sit in the space after the last measure
-      segs(t0, Math.max(t1, t0 + 0.12)).forEach(function(g){ svgEl("rect", { x: g.x0, y: g.y + 128, width: Math.max(5, g.x1 - g.x0), height: 22, rx: 5, fill: tp.extra ? "#c0392b" : "#3a7bd5", opacity: .95, stroke: tp.extra ? "#7a1f16" : "none", "stroke-width": tp.extra ? 2 : 0 }).appendChild(document.createElementNS(R.geo.ns, "title")).textContent = tp.extra ? "An extra note: nothing was written here" : "What you played"; });
+      segs(t0, Math.max(t1, t0 + 0.12)).forEach(function(g){ svgEl("rect", { x: g.x0, y: g.y + 128, width: Math.max(5, g.x1 - g.x0), height: 22, rx: 5, fill: tp.extra ? "#c0392b" : "#2fa866", opacity: .95, stroke: tp.extra ? "#7a1f16" : "none", "stroke-width": tp.extra ? 2 : 0 }).appendChild(document.createElementNS(R.geo.ns, "title")).textContent = tp.extra ? "An extra note: nothing was written here" : "What you played"; });
     });
-    function zone(list, xa, xb, y, what){
+    function zone(list, xa, xb, y, what, t0z, t1z){   // X120: the gap stands for the whole beat before (or after) the exercise: each tap sits where it fell in time, as wide as it was held
       if (!list.length || xb - xa < 8) return;
-      list.sort(function(a, b){ return a.down - b.down; });
-      var w = (xb - xa) / list.length;
-      list.forEach(function(tp, k){ svgEl("rect", { x: xa + k * w + 1, y: y + 128, width: Math.max(4, w - 3), height: 22, rx: 5, fill: "#c0392b", opacity: .95, stroke: "#7a1f16", "stroke-width": 2 }).appendChild(document.createElementNS(R.geo.ns, "title")).textContent = "An extra note " + what; });
+      var span = t1z - t0z;
+      list.forEach(function(tp){ var a0 = (tp.down - R.w0) / R.tickMs, a1 = ((tp.up == null ? tp.down + 80 : tp.up) - R.w0) / R.tickMs;
+        var x0 = xa + Math.max(0, (a0 - t0z) / span) * (xb - xa), x1 = xa + Math.min(1, (a1 - t0z) / span) * (xb - xa);
+        svgEl("rect", { x: x0, y: y + 128, width: Math.max(4, x1 - x0), height: 22, rx: 5, fill: "#c0392b", opacity: .95, stroke: "#7a1f16", "stroke-width": 2 }).appendChild(document.createElementNS(R.geo.ns, "title")).textContent = "An extra note " + what; });
     }
     var G0 = R.geo, lastM = R.ex.measures.length - 1;
-    zone(preT, 70, G0.posAt(0).x - 18, G0.topPad + G0.layout[0].row * G0.rowH, "before the exercise began");
-    zone(postT, G0.mEnd[lastM] + 6, G0.W - 6, G0.topPad + G0.layout[lastM].row * G0.rowH, "after the exercise ended");
+    zone(preT, 70, G0.posAt(0).x - 18, G0.topPad + G0.layout[0].row * G0.rowH, "before the exercise began", -T.beat, 0);
+    zone(postT, G0.mEnd[lastM] + 6, G0.W - 6, G0.topPad + G0.layout[lastM].row * G0.rowH, "after the exercise ended", R.geo.total, R.endTick);
     var lg2 = svgEl("text", { x: 6, y: R.geo.topPad + 113, "font-size": 10, fill: "#777" }); lg2.textContent = "answer";
     var lg3 = svgEl("text", { x: 6, y: R.geo.topPad + 143, "font-size": 10, fill: "#777" }); lg3.textContent = "you played";
   }
@@ -1729,7 +1733,7 @@
     R.tokens = countTokens(T);
     R.tokens.forEach(function(t, k){ blip(a0 + t.tick * ms, (k === 0 || (T.compound && t.tick % 6 === 0)) ? 1500 : 1000, 0.07, 0.6, "square"); });
     for (var y = 0; y < total; y += bstep) blip(a0 + (y + T.ticks) * ms, (y % T.ticks === 0) ? 1500 : 1000, 0.06, 0.45, "square");
-    R.endTick = total + T.beat + Math.round(T.beat / 2); R.phase = "count";   // X119: keeps listening half a beat past the click beat after the last measure R.lastCount = -2;
+    R.endTick = total + T.beat + Math.round(T.beat / 2); R.phase = "count"; R.lastCount = -2;   // X119: keeps listening half a beat past the click beat after the last measure
     var h = host; h.querySelector("#rMsg").textContent = ""; h.querySelector("#rDet").textContent = "";
     h.querySelector("#rStart").style.display = "none"; h.querySelector("#rAgain").style.display = "none"; h.querySelector("#rNext").style.display = "none";
     var ph = R.geo.ph; ph.setAttribute("visibility", "hidden"); 
@@ -1756,6 +1760,7 @@
     var cstep = T.compound ? 2 : 4;
     if (tick < 0) { var ci = -1, el0 = tick + T.ticks; R.tokens.forEach(function(t, k){ if (el0 >= t.tick) ci = k; }); if (ci !== R.lastCount && ci >= 0) { R.lastCount = ci; drawCount(ci); } }
     else if (R.lastCount !== -1) { R.lastCount = -1; drawCount(-1); }
+    if (R.followOn && R.geo) { var G = R.geo, ph = G.ph; if (tick >= 0 && tick < G.total) { var pp = G.posAt(tick); ph.setAttribute("x1", pp.x); ph.setAttribute("x2", pp.x); ph.setAttribute("y1", pp.y + 25); ph.setAttribute("y2", pp.y + 92); ph.setAttribute("visibility", "visible"); } else ph.setAttribute("visibility", "hidden"); }
     if (tick >= R.endTick) { finishRun(); return; }
     raf = requestAnimationFrame(frame);
   }
@@ -1858,7 +1863,7 @@
       var r = { i: i, onset: "miss", hold: "na", dt: null };
       total += 1; onN++;
       if (best >= 0) {
-        used[best] = true; var tp = taps[best], dt = tp.down - exp; r.dt = Math.round(dt); tp.mi = i; dts.push(dt);
+        used[best] = true; var tp = taps[best]; r.tp = tp; var dt = tp.down - exp; r.dt = Math.round(dt); tp.mi = i; dts.push(dt);
         r.de = Math.round((tp.up == null ? (R.w0 + R.endTick * tm) : tp.up) - (exp + e.ticks * tm));
         if (bd <= J0.tOn) { r.onset = "good"; pts += J0.cOn; onOk++; } else if (bd <= J0.tLit) { r.onset = "lit"; pts += J0.cLit; } else if (bd <= J0.tEar) { r.onset = "ear"; pts += J0.cEar; } else { r.onset = "real"; pts += J0.cReal; }
         if (e.ticks >= J0.holdMin || e.gapNext) {
@@ -1872,17 +1877,24 @@
       res.push(r);
     });
     var extra = 0; taps.forEach(function(tp, j){ if (!used[j]) { extra++; tp.extra = true; if (tp.el) tp.el.classList.add("extra"); } });
+    res.forEach(function(r){ if (!r.tp) return; var e = E.evs[r.i], s0 = R.w0 + e.abs * tm + J0.tLit, s1 = R.w0 + (e.abs + e.ticks) * tm - 60;   // X120: another (extra) tap inside this note's own length: you played two notes, so it is not "correct"
+      taps.forEach(function(x){ if (x.extra && x !== r.tp && x.down > s0 && x.down < s1) r.split = true; });
+      if (r.split && r.onset === "good") pts -= (J0.cOn - J0.cLit); });
     pts -= extra * J0.extraPen; var ratio = total ? Math.max(0, Math.min(1, pts / total)) : 0; if (extra && ratio > J0.extraCap) ratio = J0.extraCap;   // X118: with any extra tap you can not reach 100%
     var avg = dts.length ? dts.reduce(function(a, b){ return a + b; }, 0) / dts.length : 0;
     return { res: res, ratio: ratio, pass: ratio >= J0.pass, onN: onN, onOk: onOk, holdN: holdN, holdOk: holdOk, extra: extra, avg: Math.round(avg), matched: dts.length };
   }
   var COL5 = { good: "#1a8a4a", lit: "#d89a00", ear: "#e07b00", real: "#c0392b", miss: "#c0392b" };
   var FILL5 = { good: "#d9f3e3", lit: "#fff1c7", ear: "#ffe1c2", real: "#fbdcd8", miss: "#fbdcd8" };
-  function noteKind(r){ var k = r.onset; if (k === "good" && r.hold !== "good" && r.hold !== "na") k = "lit"; return k; }   // a good start with a wrong length is "a little off"
+  function noteKind(r){ var k = r.onset; if (r.split && k === "good") k = "lit"; if (k === "good" && r.hold !== "good" && r.hold !== "na") k = "lit"; return k; }   // a good start with a wrong length is "a little off"
   function applyColors(S){
     R.colors = {}; R.restColors = {};
     S.res.forEach(function(r){ var e = R.E.evs[r.i]; r.k = noteKind(r); R.colors[e.abs] = COL5[r.k]; });
-    R.E.rests.forEach(function(rs){ var lo = rs.abs === 0 ? -99 : rs.abs - 0.5, bad = R.taps.some(function(tp){ if (tp.count) return false; var tk = (tp.down - R.w0) / R.tickMs; return tp.extra && tk >= lo && tk < rs.abs + rs.ticks - 0.5; }); R.restColors[rs.abs] = bad ? COL5.miss : COL5.good; });   // X117: a stray tap before the very first beat counts against a rest on beat 1
+    var nowT = (performance.now() - R.w0) / R.tickMs, okN = function(i){ return S.res[i] && S.res[i].onset !== "miss"; };
+    R.E.rests.forEach(function(rs){ var lo = rs.abs === 0 ? -99 : rs.abs - 0.5, endT = rs.abs + rs.ticks, bad = R.taps.some(function(tp){ if (tp.count) return false; var tk = (tp.down - R.w0) / R.tickMs; return tp.extra && tk >= lo && tk < endT - 0.5; });   // X117: a stray tap before the very first beat counts against a rest on beat 1
+      var bi = -1, ai = -1; R.E.evs.forEach(function(e, i){ if (e.abs < rs.abs) bi = i; else if (e.abs >= endT && ai < 0) ai = i; });
+      var ok = nowT >= endT - 0.01 && (bi >= 0 || ai >= 0) && (bi < 0 || okN(bi)) && (ai < 0 || okN(ai));   // X120: a rest is "correct" only if the exercise got that far and the notes on both sides were at least partly right; otherwise it is left grey
+      R.restColors[rs.abs] = bad ? COL5.miss : (ok ? COL5.good : "#8a8a8a"); });
   }
   function finishRun(){
     cancelAnimationFrame(raf); toneAll(); stopSched(); if (!R) return;
@@ -1895,9 +1907,7 @@
     // the written notes turn green / yellow / red, and the boxes (should play) and bars (you played) sit directly under them
     var pct = S.ratio >= 1 ? 100 : Math.min(99, Math.floor(S.ratio * 100));   // X118: 100% only when nothing is off
     h.querySelector("#rMsg").innerHTML = S.pass ? '<span class="big okc">Got it! ' + pct + '%</span>' + (cleared(lv) ? ' <b>Level cleared!</b>' : "") : '<span class="big no">Not yet. ' + pct + '%</span>';
-    var bits = ["Notes started on time: <b>" + S.onOk + " of " + S.onN + "</b>"];
-    if (S.holdN) bits.push("Long notes held the right length: <b>" + S.holdOk + " of " + S.holdN + "</b>");
-    if (S.extra) bits.push("Extra taps: <b>" + S.extra + "</b>");
+    var bits = [];   // X120: the three count lines were removed
     if (S.matched >= 3 && Math.abs(S.avg) >= 40) bits.push("You tapped about <b>" + Math.abs(S.avg) + " ms " + (S.avg > 0 ? "late" : "early") + "</b> on average");
     h.querySelector("#rDet").innerHTML = bits.join("<br>");
     var res = rResults(), r = res[lv.id] || (res[lv.id] = { tries: 0, passes: 0, best: null });

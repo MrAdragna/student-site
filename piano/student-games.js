@@ -1,5 +1,4 @@
-/* X117 (c13): Songs show a worksheet that is set to note names / finger numbers / pictures the same way (the Workbook cell layouts were extracted into WBX); piano note names are a teacher-preview-only helper (off for students and test computers); rhythm: audio-clock readings are averaged all through the try, warm-up takes the true middle and asks again when its taps are uneven, a failed try shows its boxes, stray taps before beat 1 are counted, the warm-up boxes no longer show on the first exercise. */
-/* student-games.js (X112: Songs are drawn by the Workbook's own renderer (extracted from Workbook.js 4.67), home-row piano, due/current badges, locked extras (teacher PIN), last-5 dots, follower line per level, live tap bars, teacher "count as right / wrong"; X111, c13, 19 Nov 2026; X111 = games sit under the game bar, Songs grouped by unit with a keyboard that fits the song + MIDI, Rhythm: 4 measures at tempo 60, count-in above the music, results hidden until you finish, optional follower line, levels unlock in order, timing numbers from the teacher panel). Two extra games for the student site, loaded by student-ui.js:
+/* student-games.js (X118: judging bands + credit per band, extra-tap cap, "Not tried" for count-in exits, calibration saved once per computer; X112: Songs are drawn by the Workbook's own renderer (extracted from Workbook.js 4.67), home-row piano, due/current badges, locked extras (teacher PIN), last-5 dots, follower line per level, live tap bars, teacher "count as right / wrong"; X111, c13, 19 Nov 2026; X111 = games sit under the game bar, Songs grouped by unit with a keyboard that fits the song + MIDI, Rhythm: 4 measures at tempo 60, count-in above the music, results hidden until you finish, optional follower line, levels unlock in order, timing numbers from the teacher panel). Two extra games for the student site, loaded by student-ui.js:
    RHYTHM  = tap the rhythm on the keyboard (Space or any key; key down AND key up are judged). The rhythms come from the teacher's RhythmRandomizer levels
              (published in the site settings as `rhythm`; without them the 13 built-in RhythmRandomizer levels are used). The generator below is copied from
              RhythmRandomizer.js v29 (registries, level model, fits / fillMeasure / generateOnce); nothing else of that app is used.
@@ -1474,7 +1473,10 @@
     var c = rr && rr.cfg || {}; cfg = { weights: c.weights || {}, shapeRules: c.shapeRules || {}, profiles: [] };
     try { levels = (list ? JSON.parse(JSON.stringify(list)) : seedLevels()).map(normalizeLevel); } catch (e) { levels = seedLevels().map(normalizeLevel); }
   }
-  function J(){ var j = SC().rjudge || {}; function g(k, d){ var v = Number(j[k]); return isFinite(v) && j[k] != null && j[k] !== "" ? v : d; } return { startMin: g("startMin", 90), startMax: g("startMax", 150), closeMult: g("closeMult", 1.8), holdMin: g("holdMin", 8), holdTolMs: g("holdTolMs", 150), holdTolPct: g("holdTolPct", 20), gapPct: g("gapPct", 50), pass: g("pass", 85) / 100, need: g("need", 4), yellow: g("yellow", 70) / 100, of: g("of", 5) }; }
+  function J(){ var j = SC().rjudge || {}; function g(k, d){ var v = Number(j[k]); return isFinite(v) && j[k] != null && j[k] !== "" ? v : d; }
+    // X118: the teacher's bands (ms from the written note start, after calibration) and how much each one is worth. Beyond tReal a tap is "wrong entirely": a missed note plus an extra tap.
+    return { tOn: g("tOn", 90), tLit: g("tLit", 150), tEar: g("tEar", 250), tReal: g("tReal", 400), cOn: g("cOn", 100) / 100, cLit: g("cLit", 80) / 100, cEar: g("cEar", 50) / 100, cReal: g("cReal", 20) / 100, extraPen: g("extraPen", 50) / 100, extraCap: g("extraCap", 95) / 100,
+      holdMin: g("holdMin", 8), holdTolMs: g("holdTolMs", 150), holdTolPct: g("holdTolPct", 20), gapPct: g("gapPct", 50), pass: g("pass", 85) / 100, need: g("need", 4), yellow: g("yellow", 70) / 100, of: g("of", 5) }; }
   var COUNTOFF = { "4/4": "0:1 4:2 8:rea-/3 10:dy/+ 12:and/4", "3/4": "0:1 4:rea-/2 6:dy/+ 8:and/3", "6/8": "0:1 2:+ 4:a 6:2 8:+ 10:a" };
   function countTokens(T){
     var key = "ts_" + T.num + T.den, c = (SC().rhythm && SC().rhythm.cfg || {}), txt = (c.countOff && c.countOff[key]) || COUNTOFF[T.num + "/" + T.den] || COUNTOFF["4/4"];
@@ -1488,11 +1490,13 @@
   function tickMsOf(T, bpm){ return 60000 / (bpm * T.beat); }
 
   window.ssGameBusy = function(){ return !!(R && (R.phase === "count" || R.phase === "run")); };
-  var CAL = { done: false, offset: 0, fails: 0 };   // X116: lives only until the page is refreshed; every refresh starts with a one-measure warm-up
+  var CAL = { done: false, offset: 0, fails: 0 };   /* X118: saved once per computer (ss:rcal); the warm-up only runs the first time, or when the teacher re-runs it */
+  (function(){ try { var c = JSON.parse(lg("rcal") || "null"); if (c && c.done && isFinite(c.offset)) { CAL.done = true; CAL.offset = c.offset; } } catch (e) {} })();
+  function calSave(){ try { ls("rcal", JSON.stringify({ done: true, offset: CAL.offset, at: Date.now() })); } catch (e) {} }   // X116: lives only until the page is refreshed; every refresh starts with a one-measure warm-up
   function openRhythm(){
     if (!window.VexFlow) { alert("The music drawing code did not load. Reload the page."); return; }
     if (!levels.length) loadLevels();
-    var body = openHost("rhythm", "Rhythm", '<span class="ssg-ver">games X117</span>' + '<span class="ctl">Tempo <button type="button" class="ssg-btn sm" id="rSlow">&minus;</button><b id="rTempo"></b><button type="button" class="ssg-btn sm" id="rFast">+</button></span>' +
+    var body = openHost("rhythm", "Rhythm", '<span class="ssg-ver">games X118</span>' + '<span class="ctl">Tempo <button type="button" class="ssg-btn sm" id="rSlow">&minus;</button><b id="rTempo"></b><button type="button" class="ssg-btn sm" id="rFast">+</button></span>' +
       '<span class="ctl" id="rTeach" style="display:none" title="Teacher only">Teacher: <span id="rCal"></span> <button type="button" class="ssg-btn sm" id="rRewarm">Redo warm-up</button> <label><input type="checkbox" id="rOpenAll"> open every level</label> <button type="button" class="ssg-btn sm" id="rResetLv" title="Forget every level\'s tries on this computer">Reset all levels</button> <button type="button" class="ssg-btn sm" id="rResetOne" title="Forget the tries of this level">Reset this level</button> <button type="button" class="ssg-btn sm" id="rClearOne" title="Count this level as cleared">Clear this level</button></span>');
     body.innerHTML = '<div class="ssg-side" id="rLevels"></div><div class="ssg-main"><div class="ssg-sub" id="rTitle"></div><div class="ssg-count" id="rCount"></div><div class="ssg-staff" id="rStaff"></div><div class="ssg-lane" id="rLane"></div>' +
       '<div class="ssg-msg" id="rMsg"></div><div class="ssg-sub" id="rDet"></div><div class="ssg-btns"><button type="button" class="ssg-btn primary" id="rStart">Start</button><button type="button" class="ssg-btn" id="rAgain" style="display:none">Try again</button><button type="button" class="ssg-btn" id="rStop" disabled>Backspace to stop</button><button type="button" class="ssg-btn" id="rNew">N for new rhythm</button><button type="button" class="ssg-btn" id="rNext" style="display:none">Next level</button></div>' +
@@ -1518,7 +1522,7 @@
       if (ev.metaKey || ev.ctrlKey || ev.altKey || k === "Shift" || k === "Control" || k === "Alt" || k === "Meta" || k === "Tab" || /^F\d+$/.test(k) || k === "CapsLock") return;
       if (ev.target && /^(INPUT|TEXTAREA|SELECT)$/.test(ev.target.tagName) && k !== " ") return;
       ev.preventDefault(); ev.stopPropagation();
-      if (k === "Escape") { if (R.phase === "count" || R.phase === "run") failRun("You pressed Escape."); return; }   // X115: Escape (it also leaves full screen) fails the try
+      if (k === "Escape") { if (R.phase === "count" || R.phase === "run") failRun("You pressed Escape."); return; }   // X118: during the count-in this is "Not tried" (no attempt counted)   // X115: Escape (it also leaves full screen) fails the try
       if (k === "Backspace") { if (R.phase === "count" || R.phase === "run") abortRun(); return; }
       if (k === "n" || k === "N") { if (!ev.repeat && (R.phase === "ready" || R.phase === "done") && R.lv > 0) newExercise(); return; }
       if (ev.repeat) return;
@@ -1530,7 +1534,7 @@
     var ku = function(ev){ if (!host || host.getAttribute("data-game") !== "rhythm") return; ev.preventDefault(); ev.stopPropagation(); tapUp(ev.code || ev.key, ev.timeStamp > 0 ? ev.timeStamp : performance.now()); };
     window.addEventListener("keydown", kd, true); window.addEventListener("keyup", ku, true);
     cleanup = function(){ window.removeEventListener("keydown", kd, true); window.removeEventListener("keyup", ku, true); cancelAnimationFrame(raf); R = null; };
-    if (isTeacher()) { h.querySelector("#rTeach").style.display = ""; h.querySelector("#rRewarm").onclick = function(){ if (R.phase === "count" || R.phase === "run") abortRun(); CAL.done = false; startWarm(); this.blur(); }; var oa = h.querySelector("#rOpenAll"); oa.checked = lg("rhythm-openall") === "1"; oa.onchange = function(){ ls("rhythm-openall", this.checked ? "1" : "0"); drawLevels(); }; h.querySelector("#rResetLv").onclick = function(){ ls("rhythm-results", "{}"); drawLevels(); }; h.querySelector("#rResetOne").onclick = function(){ var rs = rResults(); delete rs[levels[R.lv].id]; ls("rhythm-results", JSON.stringify(rs)); drawLevels(); }; h.querySelector("#rClearOne").onclick = function(){ var rs = rResults(), id = levels[R.lv].id, r = rs[id] || (rs[id] = { tries: 0, passes: 0, best: null }); r.h2 = [2, 2, 2, 2, 2]; ls("rhythm-results", JSON.stringify(rs)); drawLevels(); }; }
+    if (isTeacher()) { h.querySelector("#rTeach").style.display = ""; h.querySelector("#rRewarm").onclick = function(){ if (R.phase === "count" || R.phase === "run") abortRun(); CAL.done = false; try { localStorage.removeItem("ss:rcal"); } catch (e) {} startWarm(); this.blur(); }; var oa = h.querySelector("#rOpenAll"); oa.checked = lg("rhythm-openall") === "1"; oa.onchange = function(){ ls("rhythm-openall", this.checked ? "1" : "0"); drawLevels(); }; h.querySelector("#rResetLv").onclick = function(){ ls("rhythm-results", "{}"); drawLevels(); }; h.querySelector("#rResetOne").onclick = function(){ var rs = rResults(); delete rs[levels[R.lv].id]; ls("rhythm-results", JSON.stringify(rs)); drawLevels(); }; h.querySelector("#rClearOne").onclick = function(){ var rs = rResults(), id = levels[R.lv].id, r = rs[id] || (rs[id] = { tries: 0, passes: 0, best: null }); r.h2 = [2, 2, 2, 2, 2]; ls("rhythm-results", JSON.stringify(rs)); drawLevels(); }; }
     var fsw = function(){ if (R && R.fs && !document.fullscreenElement && (R.phase === "count" || R.phase === "run")) failRun("You left full screen."); };
     document.addEventListener("fullscreenchange", fsw);
     var cl0 = cleanup; cleanup = function(){ document.removeEventListener("fullscreenchange", fsw); if (cl0) cl0(); };
@@ -1652,10 +1656,10 @@
   function svgEl(name, at, parent){ var e = document.createElementNS(R.geo.ns, name); Object.keys(at).forEach(function(k){ e.setAttribute(k, at[k]); }); (parent || R.geo.svg).appendChild(e); return e; }
   function drawUnder(){
     var S = R.score, E = R.E, T = R.ex.ts, teacher = isTeacher();
-    var FILL = { good: "#d9f3e3", close: "#fff1c7", miss: "#fbdcd8" }, EDGE = { good: "#1a8a4a", close: "#d89a00", miss: "#c0392b" };
+    var FILL = FILL5, EDGE = COL5;
     E.rests.forEach(function(rs){ var bad = R.restColors && R.restColors[rs.abs] === "#c0392b"; segs(rs.abs, rs.abs + rs.ticks).forEach(function(g){ svgEl("rect", { x: g.x0, y: g.y + 96, width: g.x1 - g.x0, height: 26, rx: 5, fill: bad ? "#fbdcd8" : "#f3f3f3", stroke: bad ? "#c0392b" : "#cfcfcf", "stroke-dasharray": "4 3", "stroke-width": 1.5 }); }); });
     S.res.forEach(function(r){
-      var e = E.evs[r.i], words = r.onset === "miss" ? ["missed"] : r.onset === "off" ? [r.dt < 0 ? "way too early" : "way too late"] : [r.onset === "close" ? (r.dt < 0 ? "early start" : "late start") : "", r.hold === "short" ? "let go early" : r.hold === "long" ? "held long" : ""].filter(Boolean);
+      var e = E.evs[r.i], early = r.dt != null && r.dt < 0, words = r.onset === "miss" ? ["missed"] : r.onset === "real" ? [early ? "way too early" : "way too late"] : r.onset === "ear" ? [early ? "too early" : "too late"] : [r.onset === "lit" ? (early ? "a bit early" : "a bit late") : "", r.hold === "short" ? "let go early" : r.hold === "long" ? "held long" : ""].filter(Boolean);
       var full = teacher && r.dt != null ? "start " + (r.dt > 0 ? "+" : "") + r.dt + " end " + (r.de > 0 ? "+" : "") + r.de : (words.length ? words.join(", ") : "\u2713");
       var title = "Start: " + (r.dt == null ? "missed" : (r.dt > 0 ? r.dt + " ms late" : (-r.dt) + " ms early")) + (r.hold === "na" ? "" : "; end: " + (r.hold === "good" ? "good" : r.hold === "short" ? "you let go too early" : "you held too long"));
       segs(e.abs, e.abs + e.ticks).forEach(function(g, gi){
@@ -1759,22 +1763,22 @@
     if (!Object.keys(R.held).length) { var nb = host.querySelector("#rNow"); if (nb) nb.classList.remove("on"); }
   }
   function abortRun(noScore){   // Backspace: stop here, what you played so far is scored as it is. Leaving full screen: just stop.
-    if (!R) return;
+    if (!R) return; var wasCount = R.phase === "count";
     cancelAnimationFrame(raf); toneAll(); stopSched();
     if (!noScore && R.phase === "run" && R.taps.length) { finishRun(); return; }
-    R.phase = "ready"; R.held = {}; var h = host; if (h) { showReady(); h.querySelector("#rMsg").textContent = noScore ? "The try ended because the screen left full screen." : "Stopped."; setBtns(); }
+    R.phase = "ready"; R.held = {}; var h = host; if (h) { showReady(); h.querySelector("#rMsg").innerHTML = noScore ? "The try ended because the screen left full screen." : (wasCount ? '<span class="big no">Not tried.</span> Backspace during the count-in: the same rhythm is ready again.' : "Stopped."); setBtns(); }
   }
   function failRun(why){   // X115: leaving full screen / Escape: the try is over, it counts as failed, and this rhythm is not offered again (a new one comes next). X117: once the rhythm itself had begun, the boxes of that try are shown
     if (!R || (R.phase !== "count" && R.phase !== "run")) return;
-    var wasRun = R.phase === "run" && !R.warm;
+    var wasRun = R.phase === "run" && !R.warm, wasCount = R.phase === "count" && !R.warm;   // X118: leaving during the count-in is "Not tried": no attempt, no progress dot
     cancelAnimationFrame(raf); toneAll(); stopSched(); Object.keys(R.held).forEach(function(k){ tapUp(k, performance.now()); }); R.held = {};
     if (R.warm) { R.phase = "ready"; R.taps = []; R.held = {}; drawLane(); drawCount(-1); host.querySelector("#rMsg").innerHTML = "The warm-up stopped (" + esc(why) + ") Press any key to try it again."; setBtns(); return; }
     var lv = levels[R.lv], res = rResults(), r = res[lv.id] || (res[lv.id] = { tries: 0, passes: 0, best: null });
-    r.tries++; r.h2 = (r.h2 || []).concat(0).slice(-20); if (r.best == null) r.best = 0; ls("rhythm-results", JSON.stringify(res));
-    evt("ss-attempt", { title: "Rhythm: " + lv.name, mode: "practice", ok: false });
+    if (!wasCount) { r.tries++; r.h2 = (r.h2 || []).concat(0).slice(-20); if (r.best == null) r.best = 0; ls("rhythm-results", JSON.stringify(res));
+    evt("ss-attempt", { title: "Rhythm: " + lv.name, mode: "practice", ok: false }); }
     var S = null; if (wasRun) { try { S = score(); applyColors(S); R.score = S; R.reveal = true; R.hadResult = true; } catch (e) { S = null; } }
     R.phase = "ready"; R.needNew = R.lv > 0; R.tries = 1; if (!S) { R.colors = null; R.restColors = null; }
-    drawLane(); drawCount(-1); if (S) drawStaff(); var h = host; h.querySelector("#rMsg").innerHTML = '<span class="big no">Try failed.</span> ' + esc(why) + (R.lv > 0 ? " You get a new rhythm next." : ""); h.querySelector("#rDet").textContent = "";
+    drawLane(); drawCount(-1); if (S) drawStaff(); var h = host; h.querySelector("#rMsg").innerHTML = '<span class="big no">' + (wasCount ? "Not tried." : "Try failed.") + '</span> ' + esc(why) + (R.lv > 0 ? " You get a new rhythm next." : ""); h.querySelector("#rDet").textContent = "";
     h.querySelector("#rStart").style.display = R.lv > 0 ? "" : "none"; h.querySelector("#rAgain").style.display = R.lv > 0 ? "none" : ""; h.querySelector("#rNext").style.display = "none";
     var ph = R.geo && R.geo.ph; if (ph) ph.setAttribute("visibility", "hidden"); setBtns(); drawLevels();
   }
@@ -1782,7 +1786,7 @@
   function startWarm(){   // one measure of four quarter notes, once per page load: it measures how far this keyboard / speaker is from the clicks
     var r = generateExercise(0, { measures: 4 }); if (!r || !r.ex) { CAL.done = true; return; }
     r.ex.measures = r.ex.measures.slice(0, 1); R.ex = r.ex; R.warm = true; R.afterWarm = false; R.tempo = 60; host.querySelector("#rTempo").textContent = 60; R.phase = "ready"; R.taps = []; R.held = {}; R.tries = 0; CAL.offset = 0;
-    host.querySelector("#rTitle").innerHTML = '<b>Warm-up</b> &middot; play the four quarter notes with the clicks (this happens once each time the page opens)';
+    host.querySelector("#rTitle").innerHTML = '<b>Warm-up</b> &middot; play the four quarter notes with the clicks (this happens once on this computer)';
     R.colors = null; R.restColors = null; R.reveal = false; R.score = null; drawStaff(); showReady(); host.querySelector("#rMsg").innerHTML = 'Warm-up: you hear one measure of counting, then play the four notes. The game uses it to line up with your keyboard.'; setBtns(); drawLevels();
     var tc = host.querySelector("#rCal"); if (tc) tc.textContent = "";
   }
@@ -1794,7 +1798,7 @@
       var mid = d.length >= 4 ? d.slice(1, -1) : d; uneven = (mid[mid.length - 1] - mid[0] > 110) && CAL.fails < 2;   // taps that wander by more than ~0.1 s say more about the player than the keyboard: ask once or twice more
     }
     if (d.length >= 3 && !uneven) {
-      CAL.offset = Math.max(-250, Math.min(250, Math.round(med))); CAL.done = true; R.warm = false; R.afterWarm = true;
+      CAL.offset = Math.max(-250, Math.min(250, Math.round(med))); CAL.done = true; calSave(); R.warm = false; R.afterWarm = true;
       h.querySelector("#rMsg").innerHTML = '<span class="big okc">Warm-up done.</span> Press any key to start level ' + (R.lv + 1) + '.';
       h.querySelector("#rDet").textContent = isTeacher() ? "Teacher: your taps ran " + CAL.offset + " ms " + (CAL.offset >= 0 ? "late" : "early") + " on the warm-up; every later try is shifted by that." : "";
     } else if (uneven) {
@@ -1814,7 +1818,7 @@
   // A tap far from every note is an extra. If one tap is exactly as far from two notes, it is counted as LATE for the earlier note (students drift late far more often than early).
   function matchTaps(evs, taps, tm, close, T){
     var n = evs.length, m = taps.length, K = close, MISS = K, EX = K, INF = 1e12, i, j;
-    var W = evs.map(function(e, k){ var pg = k > 0 ? (e.abs - evs[k - 1].abs) * tm : (e.abs > 0 ? e.abs * tm : 2 * T.beat * tm), ng = evs[k + 1] ? (evs[k + 1].abs - e.abs) * tm : 2 * T.beat * tm; return Math.max(close, Math.min(650, 0.48 * Math.min(pg, ng))); });
+    var J1 = J(), W = evs.map(function(e, k){ var pg = k > 0 ? (e.abs - evs[k - 1].abs) * tm : (e.abs > 0 ? e.abs * tm : 2 * T.beat * tm), ng = evs[k + 1] ? (evs[k + 1].abs - e.abs) * tm : 2 * T.beat * tm; return Math.max(J1.tLit, Math.min(J1.tReal, 0.48 * Math.min(pg, ng))); });
     function cost(a, b){ var d = taps[b].down - (R.w0 + evs[a].abs * tm), ad = Math.abs(d); return ad <= W[a] ? ad + (d < 0 ? 0.5 : 0) : INF; }
     var dp = [], k2; for (i = 0; i <= n; i++) { dp.push(new Array(m + 1)); }
     for (i = 0; i <= n; i++) for (j = 0; j <= m; j++) {
@@ -1832,7 +1836,7 @@
     return out;
   }
   function score(){
-    var T = R.ex.ts, E = R.E, tm = R.tickMs, J0 = J(), good = Math.max(J0.startMin, Math.min(J0.startMax, 0.5 * tm)), close = Math.min(260, good * J0.closeMult), used = {}, res = [];
+    var T = R.ex.ts, E = R.E, tm = R.tickMs, J0 = J(), close = J0.tEar, used = {}, res = [];
     var taps = R.taps.filter(function(t){ return !t.count; });
     var pts = 0, total = 0, holdN = 0, holdOk = 0, onN = 0, onOk = 0, dts = [];
     taps.sort(function(a, b){ return a.down - b.down; });
@@ -1845,8 +1849,8 @@
       if (best >= 0) {
         used[best] = true; var tp = taps[best], dt = tp.down - exp; r.dt = Math.round(dt); tp.mi = i; dts.push(dt);
         r.de = Math.round((tp.up == null ? (R.w0 + R.endTick * tm) : tp.up) - (exp + e.ticks * tm));
-        if (bd <= good) { r.onset = "good"; pts += 1; onOk++; } else if (bd <= close) { r.onset = "close"; pts += 0.5; } else r.onset = "off";
-        if (r.onset !== "off" && (e.ticks >= J0.holdMin || e.gapNext)) {
+        if (bd <= J0.tOn) { r.onset = "good"; pts += J0.cOn; onOk++; } else if (bd <= J0.tLit) { r.onset = "lit"; pts += J0.cLit; } else if (bd <= J0.tEar) { r.onset = "ear"; pts += J0.cEar; } else { r.onset = "real"; pts += J0.cReal; }
+        if (e.ticks >= J0.holdMin || e.gapNext) {
           total += 1; holdN++;
           var up = tp.up == null ? (R.w0 + R.endTick * tm) : tp.up, expEnd = exp + e.ticks * tm, tol = Math.max(J0.holdTolMs, J0.holdTolPct / 100 * e.ticks * tm), dd = up - expEnd, ok2 = Math.abs(dd) <= tol;
           if (e.gapNext && e.ticks < J0.holdMin) ok2 = (up - exp) >= e.ticks * tm * J0.gapPct / 100 && up <= exp + e.ticks * tm + tol;
@@ -1857,26 +1861,28 @@
       res.push(r);
     });
     var extra = 0; taps.forEach(function(tp, j){ if (!used[j]) { extra++; tp.extra = true; if (tp.el) tp.el.classList.add("extra"); } });
-    pts -= extra * 0.5; var ratio = total ? Math.max(0, Math.min(1, pts / total)) : 0;
+    pts -= extra * J0.extraPen; var ratio = total ? Math.max(0, Math.min(1, pts / total)) : 0; if (extra && ratio > J0.extraCap) ratio = J0.extraCap;   // X118: with any extra tap you can not reach 100%
     var avg = dts.length ? dts.reduce(function(a, b){ return a + b; }, 0) / dts.length : 0;
     return { res: res, ratio: ratio, pass: ratio >= J0.pass, onN: onN, onOk: onOk, holdN: holdN, holdOk: holdOk, extra: extra, avg: Math.round(avg), matched: dts.length };
   }
-  function applyColors(S, COL){
-    COL = COL || { good: "#1a8a4a", close: "#d89a00", miss: "#c0392b" };
+  var COL5 = { good: "#1a8a4a", lit: "#d89a00", ear: "#e07b00", real: "#c0392b", miss: "#c0392b" };
+  var FILL5 = { good: "#d9f3e3", lit: "#fff1c7", ear: "#ffe1c2", real: "#fbdcd8", miss: "#fbdcd8" };
+  function noteKind(r){ var k = r.onset; if (k === "good" && r.hold !== "good" && r.hold !== "na") k = "lit"; return k; }   // a good start with a wrong length is "a little off"
+  function applyColors(S){
     R.colors = {}; R.restColors = {};
-    S.res.forEach(function(r){ var e = R.E.evs[r.i], k = r.onset === "good" && (r.hold === "good" || r.hold === "na") ? "good" : r.onset === "miss" ? "miss" : "close"; r.k = k; R.colors[e.abs] = COL[k]; });
-    R.E.rests.forEach(function(rs){ var lo = rs.abs === 0 ? -99 : rs.abs - 0.5, bad = R.taps.some(function(tp){ if (tp.count) return false; var tk = (tp.down - R.w0) / R.tickMs; return tp.extra && tk >= lo && tk < rs.abs + rs.ticks - 0.5; }); R.restColors[rs.abs] = bad ? COL.miss : COL.good; });   // X117: a stray tap before the very first beat counts against a rest on beat 1
+    S.res.forEach(function(r){ var e = R.E.evs[r.i]; r.k = noteKind(r); R.colors[e.abs] = COL5[r.k]; });
+    R.E.rests.forEach(function(rs){ var lo = rs.abs === 0 ? -99 : rs.abs - 0.5, bad = R.taps.some(function(tp){ if (tp.count) return false; var tk = (tp.down - R.w0) / R.tickMs; return tp.extra && tk >= lo && tk < rs.abs + rs.ticks - 0.5; }); R.restColors[rs.abs] = bad ? COL5.miss : COL5.good; });   // X117: a stray tap before the very first beat counts against a rest on beat 1
   }
   function finishRun(){
     cancelAnimationFrame(raf); toneAll(); stopSched(); if (!R) return;
     Object.keys(R.held).forEach(function(k){ tapUp(k, performance.now()); });
     R.phase = "done"; R.doneAt = performance.now(); var S = score(), h = host, lv = levels[R.lv]; R.needNew = !!S.pass;
-    var teacher = isTeacher(), COL = { good: "#1a8a4a", close: "#d89a00", miss: "#c0392b" };
-    applyColors(S, COL);
+    var teacher = isTeacher();
+    applyColors(S);
     R.hadResult = true; R.score = S; R.reveal = true; drawLane(); drawStaff();
     if (R.warm || R.afterWarm) { finishWarm(S); h.querySelector("#rStart").style.display = "none"; h.querySelector("#rAgain").style.display = "none"; h.querySelector("#rNext").style.display = "none"; var ph0 = h.querySelector("#rPh"); if (ph0) ph0.style.display = "none"; R.geo.ph.setAttribute("visibility", "hidden"); drawCount(-1); R.needNew = false; return; }   // the warm-up is not a scored try
     // the written notes turn green / yellow / red, and the boxes (should play) and bars (you played) sit directly under them
-    var pct = Math.round(S.ratio * 100);
+    var pct = S.ratio >= 1 ? 100 : Math.min(99, Math.floor(S.ratio * 100));   // X118: 100% only when nothing is off
     h.querySelector("#rMsg").innerHTML = S.pass ? '<span class="big okc">Got it! ' + pct + '%</span>' + (cleared(lv) ? ' <b>Level cleared!</b>' : "") : '<span class="big no">Not yet. ' + pct + '%</span>';
     var bits = ["Notes started on time: <b>" + S.onOk + " of " + S.onN + "</b>"];
     if (S.holdN) bits.push("Long notes held the right length: <b>" + S.holdOk + " of " + S.holdN + "</b>");
@@ -2027,6 +2033,8 @@
   }
   function drawScore(s){
     var el0 = host.querySelector("#sStaff");
+    try { var dg = host.querySelector("#sDiag"); if (!dg) { dg = document.createElement("div"); dg.id = "sDiag"; dg.style.cssText = "font:11px sans-serif;color:#8a5a08;margin:2px 0;"; el0.parentNode.insertBefore(dg, el0.nextSibling); }
+      dg.textContent = isTeacher() ? "Teacher note: this song's worksheet says display = " + (s.ex ? (s.ex.display || "(none)") : "(no worksheet data published)") + ", layout = " + (s.ex ? (s.ex.layout || "(none)") : "-") + ", " + ((s.ex && s.ex.notes ? s.ex.notes.length : 0) + (s.ex && s.ex.notesL ? s.ex.notesL.length : 0)) + " notes; " + (typeof WBX === "undefined" ? "drawing code missing" : (WBX.drawCells ? "letters drawing present" : "letters drawing NOT in this site file")) + "." : ""; } catch (e0) {}
     if (s.ex && typeof WBX !== "undefined" && WBX.drawCells && (s.ex.display === "names" || s.ex.display === "fingers" || s.ex.display === "icons")) {   // X117: a worksheet shown as letters / finger numbers / pictures looks the same here
       try {
         wbCss(); el0.innerHTML = ""; var wrap = document.createElement("div"); wrap.className = "ssg-wbl"; var inner = document.createElement("div"); inner.className = "wbpage"; wrap.appendChild(inner); el0.appendChild(wrap);

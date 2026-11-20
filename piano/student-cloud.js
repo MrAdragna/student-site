@@ -59,23 +59,28 @@
     }, function(){});
   }
   function reloadWhenIdle(){
-    clearInterval(reloadWait);
-    reloadWait = setInterval(function(){ var s = st(); if (document.fullscreenElement || document.webkitFullscreenElement || (window.ssGameBusy && window.ssGameBusy())) return;   /* X116: a reload always drops full screen, so wait until the student is out of it (the "newer version" bar still offers a refresh) */
+    clearInterval(reloadWait); var blockedAt = 0;
+    reloadWait = setInterval(function(){ var s = st(); if (document.fullscreenElement || document.webkitFullscreenElement || (window.ssGameBusy && window.ssGameBusy())) { if (!blockedAt) blockedAt = Date.now(); else if (Date.now() - blockedAt > 15000) showBar("New settings from your teacher are ready."); return; }   /* X117: while the page is waiting, a small bar offers the refresh (never forced) */   /* X116: a reload always drops full screen, so wait until the student is out of it (the "newer version" bar still offers a refresh) */
       if (!s || !s.playing) { clearInterval(reloadWait); location.reload(); } }, 4000);   // never in the middle of a question
   }
   // X112: the site changed on GitHub (a new publish) while this page was open: offer a refresh (never forced, so a question in progress is not lost)
   var verBar = null;
+  function showBar(msg){
+    if (verBar) return;
+    verBar = document.createElement("div");
+    verBar.style.cssText = "position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:2147483000;background:#3a2f8f;color:#fff;font:700 15px system-ui,sans-serif;padding:10px 16px;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.3);display:flex;gap:12px;align-items:center";
+    verBar.innerHTML = '<span></span><button type="button" style="font:700 14px system-ui;border:0;border-radius:8px;padding:6px 12px;background:#fff;color:#3a2f8f;cursor:pointer">Refresh now</button><button type="button" aria-label="Later" style="border:0;background:transparent;color:#d9d4ff;font-size:18px;cursor:pointer">&times;</button>';
+    verBar.querySelector("span").textContent = msg;
+    verBar.querySelectorAll("button")[0].onclick = function(){ location.reload(); };
+    verBar.querySelectorAll("button")[1].onclick = function(){ verBar.remove(); setTimeout(function(){ verBar = null; }, 10 * 60 * 1000); };
+    document.body.appendChild(verBar);
+  }
   function checkVersion(){
     if (verBar || document.visibilityState !== "visible") return;
     fetch("site-config.json?t=" + Date.now(), { cache: "no-store" }).then(function(r){ return r.ok ? r.json() : null; }).then(function(c){
       var have = window.STUDENT_CONFIG && window.STUDENT_CONFIG.builtAt || "";
       if (!c || !c.builtAt || !have || String(c.builtAt) <= String(have) || verBar) return;
-      verBar = document.createElement("div");
-      verBar.style.cssText = "position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:2147483000;background:#3a2f8f;color:#fff;font:700 15px system-ui,sans-serif;padding:10px 16px;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.3);display:flex;gap:12px;align-items:center";
-      verBar.innerHTML = '<span>A newer version of this page is ready.</span><button type="button" style="font:700 14px system-ui;border:0;border-radius:8px;padding:6px 12px;background:#fff;color:#3a2f8f;cursor:pointer">Refresh now</button><button type="button" aria-label="Later" style="border:0;background:transparent;color:#d9d4ff;font-size:18px;cursor:pointer">&times;</button>';
-      verBar.querySelectorAll("button")[0].onclick = function(){ location.reload(); };
-      verBar.querySelectorAll("button")[1].onclick = function(){ verBar.remove(); setTimeout(function(){ verBar = null; }, 10 * 60 * 1000); };
-      document.body.appendChild(verBar);
+      showBar("A newer version of this page is ready.");
     }).catch(function(){});
   }
   setInterval(checkVersion, 3 * 60 * 1000 + Math.floor(Math.random() * 40000));

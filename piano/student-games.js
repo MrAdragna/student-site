@@ -1,3 +1,4 @@
+/* X117 (c13): Songs show a worksheet that is set to note names / finger numbers / pictures the same way (the Workbook cell layouts were extracted into WBX); piano note names are a teacher-preview-only helper (off for students and test computers); rhythm: audio-clock readings are averaged all through the try, warm-up takes the true middle and asks again when its taps are uneven, a failed try shows its boxes, stray taps before beat 1 are counted, the warm-up boxes no longer show on the first exercise. */
 /* student-games.js (X112: Songs are drawn by the Workbook's own renderer (extracted from Workbook.js 4.67), home-row piano, due/current badges, locked extras (teacher PIN), last-5 dots, follower line per level, live tap bars, teacher "count as right / wrong"; X111, c13, 19 Nov 2026; X111 = games sit under the game bar, Songs grouped by unit with a keyboard that fits the song + MIDI, Rhythm: 4 measures at tempo 60, count-in above the music, results hidden until you finish, optional follower line, levels unlock in order, timing numbers from the teacher panel). Two extra games for the student site, loaded by student-ui.js:
    RHYTHM  = tap the rhythm on the keyboard (Space or any key; key down AND key up are judged). The rhythms come from the teacher's RhythmRandomizer levels
              (published in the site settings as `rhythm`; without them the 13 built-in RhythmRandomizer levels are used). The generator below is copied from
@@ -1141,7 +1142,210 @@
   }
   // the note on the other staff that ends when this one starts (a beam from it would run to this note)
   function beamableData(n){ return !!n && (!n.rest || n.snap) && (n.d === "8" || n.d === "16"); }
-  return { renderScore: renderScore, midiOf: midiOf, notesOf: notesOf, staffList: staffList };
+
+  // ===== X117: the note-name / finger-number / picture layouts (cellsHtml, iconsHtml) =====
+  function selIn(){ return false; }
+  function pickupOverflow(){ return null; }
+  var SPACE_KEYS = { padTop: { n: 1, max: 80, label: "Space above the notation", tip: "Between the title line and the first line of notation", out: "padTopOut", col: "#2e7bd6" },
+    sysGapN: { n: 2, max: 120, label: "Space between lines", tip: "The empty space between one line of the worksheet and the next", out: "sysGapOut", col: "#6b4bb3" },
+    padBot: { n: 3, max: 80, label: "Space below the notation", tip: "Between the last line of notation and the bottom of the box", out: "padBotOut", col: "#c0407a" } };
+  function accHtml(t){ return String(t).replace(/([\u266f\u266d])/g, '<span class="wb-acc">$1</span>'); }
+  function cellRowsOf(ex){
+    var h = ex.helpers || {};
+    if (Array.isArray(ex.cellRows) && ex.cellRows[0]) return [ex.cellRows[0], ex.cellRows[1] && ex.cellRows[1] !== ex.cellRows[0] ? ex.cellRows[1] : ""];
+    if (ex.display === "fingers") return ["fingers", h.names ? "names" : ""];
+    return ["names", h.fingers ? "fingers" : ""];
+  }
+  function cellsHtml(ex, o){
+    o = o || {};
+    var ovfC = o.edit ? pickupOverflow(ex) : null;
+    var sts = staffList(ex).filter(function(st){ return hasNotes(ex, st); }), h = ex.helpers || {}, rows = cellRowsOf(ex), out = '<div class="wb-cells' + (isFreeV(ex, "cells") ? ' wb-free' : '') + '">';
+    if (!sts.length) return out + '<div class="wb-empty">Empty</div></div>';
+    sts.forEach(function(st){
+      var notes = notesOf(ex, st), info = splitMeasures(notes, timeOf(ex), ex.pickup), f = fingersFor(ex, st), CW = 50, AVAIL = Math.round(700 / (scaleOf(ex) || 1)), lines = [], cur = [], curW = 0;   // X24 (item 2.1): the page is 700 / zoom 'pixels' wide inside the zoomed box, so a smaller notation size no longer wraps early or sits on the left
+      var cellSpan = function(i){
+        var n = notes[i], sel = selIn(o, st, i), big, small = "";
+        if (n.rest && !n.snap && ex.restStyle === "none") return "";   // X23 (item 9.11): "no rests": rests are left out of a note-name worksheet
+        var val = function(kind){ return kind === "fingers" ? (f[i] || "\u00b7") : kind === "names" ? noteName(n) : ""; };
+        if (n.snap) big = "\u0001SNAP\u0001";
+        else if (n.rest) big = "\u0001REST\u0001";
+        else { big = val(rows[0]); small = rows[1] ? val(rows[1]) : ""; }
+        var flags = "", isNm = (ex.display === "names" || ex.display === "fingers");
+        if (o.edit && o.act && isNm && i > 0) {   // X24: flags only on the SELECTED worksheet; X23 (item 9.10.2): hover a letter to flag where a GROUP (blue g) or a LINE (purple l) starts; a new line is a new group by definition
+          if (!n.br) flags += '<span class="wb-fl g' + (n.gs ? " on" : "") + '" data-flag="g" data-i="' + i + '" data-s="' + st + '" title="A new group starts here (light blue)">g</span>';
+          flags += '<span class="wb-fl l' + (n.br ? " on solo" : "") + '" data-flag="l" data-i="' + i + '" data-s="' + st + '" title="A new line starts here (light purple)">l</span>';
+        }
+        return '<span class="wb-cell' + (ovfC && ovfC[st] && ovfC[st][i] ? " wb-cover" : "") + (sel ? " wb-csel" : "") + (o.chg && o.chg[st] && o.chg[st][i] ? " wb-cchg" : "") + (hasAccN(n) || n.snap ? " wb-ac" : "") + (o.edit && o.act && isNm && i > 0 && n.br ? " wb-ls" : (o.edit && o.act && isNm && n.gs ? " wb-gs" : "")) + '"' + (isFreeV(ex, "cells") ? ' style="flex:' + Math.max(0.25, noteBeats(n)) + ' 1 46px;width:auto;"' : '') + ' data-i="' + i + '" data-s="' + st + '">' + flags + '<b>' + (big === "\u0001REST\u0001" ? restCellHtml(n, ex) : big === "\u0001SNAP\u0001" ? '<span style="font-size:.6em;font-weight:800;letter-spacing:.02em;">(snap)</span>' : accHtml(esc(big))) + '</b><i>' + esc(small) + '</i></span>';
+      };
+      if (isFreeV(ex, "cells")) {   // X17 (item 12): free time has no measures, so no note takes extra room because it ended up alone in a "4/4 measure": every note is the same width, lines of up to 14 notes (or your own line breaks)
+        var fg = [], fcur = null;
+        notes.forEach(function(n, i){ if (n.rest && !n.snap && ex.restStyle === "none") return; if (!fcur || fcur.idx.length >= Math.max(4, Math.floor(AVAIL / 50)) || (n.br && i > 0)) { fcur = { idx: [] }; fg.push(fcur); } fcur.idx.push(i); });
+        info = { measures: fg };
+      }
+      var cst = isFreeV(ex, "cells") ? null : lineStarts(ex, info.measures.length);
+      info.measures.forEach(function(m, mi){
+        var w = m.idx.reduce(function(a3, i3){ return a3 + (hasAccN(notes[i3]) || notes[i3].snap ? CW + 12 : CW); }, 0) + 12, forced = mi > 0 && (!!notes[m.idx[0]].br || !!notes[m.idx[0]].hp);
+        if (cur.length && (forced || (cst ? cst[mi] : curW + w > AVAIL))) { lines.push(cur); cur = []; curW = 0; }
+        cur.push(mi); curW += w;
+      });
+      if (cur.length) lines.push(cur);
+      if (isFreeV(ex, "cells")) lines = info.measures.map(function(g, k){ return [k]; });
+      if (sts.length > 1) out += '<div class="wb-hl">' + (st === "L" ? "Left hand" : "Right hand") + '</div>';
+      var ngs = nameGroupSizes(ex), gsOn = (ex.display === "names" || ex.display === "fingers") && ex.ngMode !== "even" && notes.some(function(n){ return n.gs; });
+      if (ngs || gsOn) {   // X21 (item 2) / X22 (item 11.4): the letters are grouped the way this song reads (sizes like "3 3 2", or a "group starts here" mark on any note), with a gap between groups and no barlines. The notation itself is not touched.
+        var gl = [], gcur = [], gw = 0, gi2 = 0, gk = 0, groups = [];
+        var hideR = function(i){ return notes[i].rest && !notes[i].snap && ex.restStyle === "none"; };
+        if (gsOn) { var cg = null; notes.forEach(function(n, i){ if (hideR(i)) return; if (!cg || n.gs || (n.br && i > 0)) { cg = []; groups.push(cg); } cg.push(i); }); }
+        else while (gi2 < notes.length) {
+          var sz = ngs[Math.min(gk, ngs.length - 1)], idx0 = [];
+          for (var q = 0; q < sz && gi2 < notes.length; ) { if (hideR(gi2)) { gi2++; continue; } if (q > 0 && notes[gi2].br) break; idx0.push(gi2); gi2++; q++; }
+          gk++; if (idx0.length) groups.push(idx0);
+        }
+        var NW = 40, NWA = 56, MING = 30, MAXG = 96, wOf = function(i){ return hasAccN(notes[i]) || notes[i].snap ? NWA : NW; }, W = Math.floor(680 / (scaleOf(ex) || 1));   // X25 (item 9.2): fixed 40-unit letters (a little air), at least 30 between groups, the whole line centred
+        groups.forEach(function(idx){
+          var ww = idx.reduce(function(a4, i4){ return a4 + wOf(i4); }, 0);
+          if (gcur.length && (notes[idx[0]].br || gw + ww + gcur.length * MING > W || (+ex.ngPerLine > 0 && gcur.length >= +ex.ngPerLine))) { gl.push(gcur); gcur = []; gw = 0; }
+          gcur.push(idx); gw += ww;
+        });
+        if (gcur.length) gl.push(gcur);
+        var gapPrev = 0;
+        gl.forEach(function(ln, gli){   // the groups spread with equal space between them (up to MAXG), the line sits in the middle; a short last line keeps the gap of the line above
+          var tot = 0; ln.forEach(function(idx){ tot += idx.reduce(function(a5, i5){ return a5 + wOf(i5); }, 0); });
+          var gap = ln.length > 1 ? Math.min(MAXG, Math.max(MING, (W - tot) / (ln.length + 1))) : 0;
+          if (gli === gl.length - 1 && gli > 0 && ln.length < gl[gli - 1].length) gap = gapPrev || gap;
+          gapPrev = gap;
+          out += '<div class="wb-cline wb-ngl" style="gap:' + Math.round(gap) + 'px;">';
+          ln.forEach(function(idx){
+            out += '<span class="wb-ng">';
+            idx.forEach(function(i){ out += cellSpan(i); });
+            out += '</span>';
+          });
+          out += '</div>';
+        });
+        return;
+      }
+      lines.forEach(function(ln, li){
+        var firstIdx = info.measures[ln[0]].idx[0];
+        var dch = hpChanges(ex, st); if (dch && (firstIdx > 0 ? notes[firstIdx].hp : true)) { var d = handInner(ex, st, firstIdx, { edit: !!o.edit, sel: o.hpSel }); if (!d.hidden) out += '<div class="wb-hpm"><svg xmlns="http://www.w3.org/2000/svg" width="' + Math.round(d.w * MINI) + '" height="' + Math.round(d.h * MINI) + '" viewBox="0 0 ' + d.w + ' ' + d.h + '">' + d.svg + '</svg></div>'; }
+        var full = ln.length > 2 || (cst && ln.reduce(function(a2, mi9){ return a2 + info.measures[mi9].idx.length * CW + 12 + info.measures[mi9].idx.filter(function(i9){ return hasAccN(notes[i9]); }).length * 12; }, 0) > AVAIL);
+        out += '<div class="wb-cline' + (full ? " wb-full" : "") + '">';
+        ln.forEach(function(mi, k){
+          var last = li === lines.length - 1 && k === ln.length - 1;
+          out += '<span class="wb-mg' + (last ? " wb-end" : "") + '"' + (isFreeV(ex, "cells") ? ' style="flex:0 1 auto;width:min(100%,' + (info.measures[mi].idx.length * 120) + 'px);margin:0 auto;"' : '') + '>';   // X19 (item 14): free time fills the width (up to ~120px a note, centred), each note's share proportional to its duration
+          info.measures[mi].idx.forEach(function(i){ out += cellSpan(i); });
+          out += '</span>';
+        });
+        out += '</div>';
+      });
+    });
+    return out + '</div>';
+  }
+  function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function hasAccN(n){ return !!n && !n.rest && !!parseKey(n.k).acc; }
+  function hasNotes(ex, st){ return notesOf(ex, st).length > 0; }
+  function iconsHtml(ex, o){
+    o = o || {};
+    var sts = staffList(ex).filter(function(st){ return hasNotes(ex, st); }), mode = ex.iconLabel || "in", out = '<div class="wb-icons">';
+    var U0 = 52, RH = 26, LW = 720, free = isFreeV(ex, "icons"), showFing = !!(ex.helpers && ex.helpers.fingers), PAD = 5;
+    if (mode === "fing") mode = "in";
+    sts.forEach(function(st){
+      var notes = notesOf(ex, st), f = fingersFor(ex, st), info = splitMeasures(notes, timeOf(ex), ex.pickup), lines = [], cur = null, curW = 0;
+      var nw0 = function(n){ return Math.max(14, noteBeats(n) * U0); };
+      if (free) {
+        notes.forEach(function(n, i){ var w = nw0(n); if (!cur || (curW + w > LW - 12) || (n.br && i > 0)) { cur = { idx: [], bars: [], w: 0 }; lines.push(cur); curW = 0; } cur.idx.push(i); curW += w; cur.w = curW; });
+      } else {
+        var starts = lineStarts(ex, info.measures.length);
+        info.measures.forEach(function(m, mi){
+          var w = 0; m.idx.forEach(function(i){ w += nw0(notes[i]); });
+          var forced = mi > 0 && !!notes[m.idx[0]].br;
+          if (!cur || forced || (starts ? starts[mi] : curW + w > LW - 12)) { cur = { idx: [], bars: [], w: 0 }; lines.push(cur); curW = 0; }
+          cur.idx = cur.idx.concat(m.idx); curW += w; cur.w = curW; cur.bars.push(curW);
+        });
+      }
+      // one scale for the whole exercise: the fullest line fills the width, the notes keep their proportions on every line (never narrower than 1x)
+      var fill = 1e9; lines.forEach(function(l, li){ fill = Math.min(fill, (LW - 12) / Math.max(1, l.w)); });   // X23 (item 9.5): EVERY line limits the scale (the last line used to be left out, so a full last line ran off the page); forced groups may shrink it below 1
+      var K = Math.max(0.5, Math.min(1.7, fill === 1e9 ? 1 : fill)), U = U0 * K;
+      var nw = function(n){ return Math.max(14 * Math.min(1, K), noteBeats(n) * U); };
+      if (sts.length > 1) out += '<div class="wb-hl">' + (st === "L" ? "Left hand" : "Right hand") + '</div>';
+      lines.forEach(function(ln, li){
+        var steps = ln.idx.filter(function(i){ return !notes[i].rest; }).map(function(i){ return stepOf(notes[i].k); });
+        var lo = steps.length ? Math.min.apply(null, steps) : 0, hi = steps.length ? Math.max.apply(null, steps) : 3;
+        if (hi - lo < 3) hi = lo + 3;
+        var rows = hi - lo + 1, gridH = rows * RH, tail = (mode === "under" ? 16 : 0) + (mode === "rows" ? 30 : 0) + (showFing ? 18 : 0), H = gridH + tail + 6, x = 4, svg = '';
+        // X18/X19 (item 11): the anchor pitch (default C) is the darker gray; going up from it the rows run white, light gray, white, light gray, white, light gray, so a 7-note scale has light gray on E, G, B and two grays can meet at ti -> do
+        var zi = LET.indexOf(String(ex.zebra || "c").toLowerCase()), zA = zi >= 0 ? zi : 0, zD = String(ex.zebraEmph || "") !== "0";
+        for (var r = 0; r < rows; r++) {
+          var dA = (((hi - r) - zA) % 7 + 7) % 7, fillC = dA === 0 ? (zD ? "#d4d4d4" : "#efefef") : (dA % 2 === 0 ? "#efefef" : "#ffffff");
+          svg += '<rect x="4" y="' + (2 + r * RH) + '" width="' + (LW - 8) + '" height="' + RH + '" fill="' + fillC + '"/>';
+        }   // X17 (item 9): rows alternate gray / white (by pitch) instead of lines between the notes
+        var rowY = gridH + 26, fingY = gridH + (mode === "rows" ? 30 : mode === "under" ? 16 : 0) + 15;   // X17 (item 10): more room between the icons and the one row of names
+        ln.idx.forEach(function(i){
+          var n = notes[i], w = nw(n), bx = x + PAD, bw = Math.max(10, w - 2 * PAD), sel = selIn(o, st, i), by, g;
+          if (n.rest) {
+            by = 2 + Math.floor((rows - 1) / 2) * RH + 4;
+            g = '<rect x="' + bx + '" y="' + by + '" width="' + bw + '" height="' + (RH - 8) + '" rx="3" fill="' + (sel ? "#cfe0f5" : "#fff") + '" stroke="#777" stroke-width="1" stroke-dasharray="3 3"/>';
+          } else {
+            by = 2 + (hi - stepOf(n.k)) * RH + 2;
+            g = '<rect x="' + bx + '" y="' + by + '" width="' + bw + '" height="' + (RH - 4) + '" rx="4" fill="' + (sel ? "#cfe0f5" : (o.chg && o.chg[st] && o.chg[st][i] ? "#ffe3cc" : "#fff")) + '" stroke="#000" stroke-width="1.8"/>';
+            var nm = noteName(n), tx = bx + bw / 2;
+            if (mode === "in") g += '<text x="' + tx + '" y="' + (by + (RH - 4) / 2 + 4.5) + '" text-anchor="middle" font-size="14" font-weight="bold" font-family="Arial,Helvetica,sans-serif" fill="#000">' + esc(nm) + '</text>';
+            else if (mode === "under") g += '<text x="' + tx + '" y="' + (by + RH + 10) + '" text-anchor="middle" font-size="12" font-weight="bold" font-family="Arial,Helvetica,sans-serif" fill="#000">' + esc(nm) + '</text>';
+            else if (mode === "rows") g += '<text x="' + tx + '" y="' + rowY + '" text-anchor="middle" font-size="13" font-weight="bold" font-family="Arial,Helvetica,sans-serif" fill="#000">' + esc(nm) + '</text>';
+            if (showFing && f[i]) g += '<text x="' + tx + '" y="' + fingY + '" text-anchor="middle" font-size="12" font-family="Arial,Helvetica,sans-serif" fill="#333">' + esc(f[i]) + '</text>';
+          }
+          svg += '<g data-i="' + i + '" data-s="' + st + '" class="wb-ic" style="cursor:pointer">' + g + '</g>';
+          x += w;
+        });
+        // X24 (item 2.4): every line (system) starts with a bracket on the left and ends with a bar on the right, so you can see which system is which
+        svg += '<path d="M9 ' + (2) + ' H3 V' + (2 + gridH) + ' H9" fill="none" stroke="#000" stroke-width="2.6"/><line x1="' + (LW - 3) + '" x2="' + (LW - 3) + '" y1="2" y2="' + (2 + gridH) + '" stroke="#000" stroke-width="2.6"/>';
+        if (!free) (ln.bars || []).forEach(function(bw0, bi){ var last = li === lines.length - 1 && bi === ln.bars.length - 1, bxx = 4 + bw0 * K; svg += '<line x1="' + bxx + '" x2="' + bxx + '" y1="2" y2="' + (2 + gridH) + '" stroke="#000" stroke-width="' + (last ? 3 : 1.2) + '"/>'; });
+        out += '<svg class="wb-iconline" viewBox="0 0 ' + LW + ' ' + H + '" width="100%" style="display:block;margin:0 0 calc(34px + var(--sysgap,0px));" preserveAspectRatio="xMinYMin meet">' + svg + '</svg>';
+      });
+    });
+    return out + '</div>';
+  }
+  function nameGroupSizes(ex){
+    if (!ex || (ex.display !== "names" && ex.display !== "fingers") || ex.ngMode === "even") return null;
+    var m = String(ex.nameGroups || "").match(/\d+/g); if (!m) return null;
+    var a = m.map(Number).filter(function(x){ return x >= 1 && x <= 32; });
+    return a.length ? a : null;
+  }
+  function padPx(ex, k){ return spaceVal(ex, k); }
+  function padStyle(ex, zm){ var a = padPx(ex, "padTop"), b = padPx(ex, "padBot"), z = zm || 1; return (a ? 'padding-top:' + (a / z).toFixed(1) + 'px;' : '') + (b ? 'padding-bottom:' + (b / z).toFixed(1) + 'px;' : ''); }
+  function restCellHtml(n, ex){
+    var st = (ex && ex.restStyle) || "dash"; if (st === "dash") return '<span class="wb-restdash"></span>';
+    if (st === "word") return '<span style="font-size:.78em;font-weight:800;letter-spacing:.02em;">rest</span>';
+    var d = n.d || "q", p = '<path d="M7 3 L12 9 L8 13 L13 19 C9 18 7 20 9 24" stroke="#111" stroke-width="3.2" fill="none" stroke-linejoin="round"/>', body;
+    if (d === "w") body = '<line x1="3" x2="19" y1="9" y2="9" stroke="#111" stroke-width="2"/><rect x="7" y="9" width="8" height="4.2" fill="#111"/>';
+    else if (d === "h") body = '<line x1="3" x2="19" y1="14" y2="14" stroke="#111" stroke-width="2"/><rect x="7" y="9.8" width="8" height="4.2" fill="#111"/>';
+    else if (d === "8") body = '<circle cx="8" cy="10" r="2.3" fill="#111"/><path d="M8.6 11.5 L5.5 24 M8 10.6 C11.5 11.6 12.4 9.6 13.2 7.4" stroke="#111" stroke-width="2.8" fill="none" stroke-linecap="round"/>';
+    else if (d === "16") body = '<circle cx="8.5" cy="7" r="2.1" fill="#111"/><circle cx="6.8" cy="13.5" r="2.1" fill="#111"/><path d="M7.2 14.8 L4 26 M8.8 8.2 L7.2 13 M9 7.2 C12 8.2 13 6.4 13.6 4.4 M7.3 13.7 C10.3 14.7 11.3 12.9 12 10.9" stroke="#111" stroke-width="2.6" fill="none" stroke-linecap="round"/>';
+    else body = p;
+    return '<svg viewBox="0 0 22 28" width="28" height="38" style="vertical-align:middle" aria-label="rest">' + body + '</svg>';
+  }
+  function scaleOf(ex){ var q = scaleParts(ex); return q.ex * q.cat * q.unit * q.all / 1e8; }
+  function scaleParts(ex){
+    var it = ex && ex.assignmentId ? findItem(ex.assignmentId) : null, u = it ? it.unit.id : "", t = it && it.a ? (it.a.typeId || "") : "";
+    return { ex: sizePct(ex.size), cat: sizePct((settings.catSize || {})[u + "|" + t]), unit: sizePct((settings.unitSize || {})[u]), all: sizePct(settings.sizeAll), unitId: u, typeId: t, it: it };
+  }
+  function sizePct(v){ if (v === "s") v = 85; else if (v === "l") v = 120; v = +v; return v >= 40 && v <= 200 ? v : 100; }
+  function spaceDef(ex, k, lv){ var id = spaceId(ex, lv), m = settings.spaceDef && settings.spaceDef[lv]; var o = id && m ? m[id] : null; return o && o[k] != null && o[k] !== "" ? +o[k] : null; }
+  function spaceId(ex, lv){ var q = scaleParts(ex); return lv === "unit" ? q.unitId : lv === "type" ? q.typeId : (q.unitId && q.typeId ? q.unitId + "|" + q.typeId : ""); }
+  function spaceLv(ex, k){   // which default this worksheet follows right now: "own", "unit" | "type" | "ut", or "" (none set)
+    if (ex[k] != null && ex[k] !== "") return "own";
+    var f = ex.spaceFrom && ex.spaceFrom[k]; if (f) return f;
+    var o = ["ut", "type", "unit"]; for (var i = 0; i < o.length; i++) if (spaceDef(ex, k, o[i]) != null) return o[i];
+    return "";
+  }
+  function spaceVal(ex, k){
+    var mx = SPACE_KEYS[k].max, lv = spaceLv(ex, k), v = 0;
+    if (lv === "own") v = +ex[k] || 0; else if (lv) v = spaceDef(ex, k, lv) || 0;
+    else if (k === "sysGapN") v = { roomy: 14, wide: 28, xwide: 44 }[ex.sysGap || ""] || 0;
+    return Math.max(0, Math.min(mx, Math.round(v)));
+  }
+  function sysGapPx(ex){ return spaceVal(ex, "sysGapN"); }
+  function drawCells(host, ex){ var zm = scaleOf(ex), gp = sysGapPx(ex), so = { edit: false, act: false, markers: false }; host.innerHTML = '<div class="wb-zoomed" style="' + (zm !== 1 ? "zoom:" + zm.toFixed(3) + ";" : "") + padStyle(ex, zm) + (gp ? "--sysgap:" + gp + "px;" : "") + '">' + (ex.display === "icons" ? iconsHtml(ex, so) : cellsHtml(ex, so)) + "</div>"; }
+  return { renderScore: renderScore, midiOf: midiOf, notesOf: notesOf, staffList: staffList, drawCells: drawCells };
   })();
 
   // =====================================================================
@@ -1288,7 +1492,7 @@
   function openRhythm(){
     if (!window.VexFlow) { alert("The music drawing code did not load. Reload the page."); return; }
     if (!levels.length) loadLevels();
-    var body = openHost("rhythm", "Rhythm", '<span class="ssg-ver">games X116</span>' + '<span class="ctl">Tempo <button type="button" class="ssg-btn sm" id="rSlow">&minus;</button><b id="rTempo"></b><button type="button" class="ssg-btn sm" id="rFast">+</button></span>' +
+    var body = openHost("rhythm", "Rhythm", '<span class="ssg-ver">games X117</span>' + '<span class="ctl">Tempo <button type="button" class="ssg-btn sm" id="rSlow">&minus;</button><b id="rTempo"></b><button type="button" class="ssg-btn sm" id="rFast">+</button></span>' +
       '<span class="ctl" id="rTeach" style="display:none" title="Teacher only">Teacher: <span id="rCal"></span> <button type="button" class="ssg-btn sm" id="rRewarm">Redo warm-up</button> <label><input type="checkbox" id="rOpenAll"> open every level</label> <button type="button" class="ssg-btn sm" id="rResetLv" title="Forget every level\'s tries on this computer">Reset all levels</button> <button type="button" class="ssg-btn sm" id="rResetOne" title="Forget the tries of this level">Reset this level</button> <button type="button" class="ssg-btn sm" id="rClearOne" title="Count this level as cleared">Clear this level</button></span>');
     body.innerHTML = '<div class="ssg-side" id="rLevels"></div><div class="ssg-main"><div class="ssg-sub" id="rTitle"></div><div class="ssg-count" id="rCount"></div><div class="ssg-staff" id="rStaff"></div><div class="ssg-lane" id="rLane"></div>' +
       '<div class="ssg-msg" id="rMsg"></div><div class="ssg-sub" id="rDet"></div><div class="ssg-btns"><button type="button" class="ssg-btn primary" id="rStart">Start</button><button type="button" class="ssg-btn" id="rAgain" style="display:none">Try again</button><button type="button" class="ssg-btn" id="rStop" disabled>Backspace to stop</button><button type="button" class="ssg-btn" id="rNew">N for new rhythm</button><button type="button" class="ssg-btn" id="rNext" style="display:none">Next level</button></div>' +
@@ -1357,7 +1561,7 @@
     host.querySelector("#rTitle").innerHTML = '<b>Level ' + (R.lv + 1) + ': ' + esc(lv.name) + '</b>' + "";
     if (!R.ex) { host.querySelector("#rStaff").innerHTML = '<div class="ssg-sub">Could not make a rhythm for this level (' + esc(R.err) + ').</div>'; return; }
     evt("ss-question", { title: "Rhythm: " + lv.name, mode: "practice" });
-    R.colors = null; R.restColors = null; drawStaff(); showReady(); setBtns();
+    R.colors = null; R.restColors = null; R.reveal = false; R.score = null; drawStaff(); showReady(); setBtns();
   }
   function showReady(){
     var h = host; if (!h || !R || !R.ex) return;
@@ -1464,6 +1668,7 @@
     });
     R.taps.forEach(function(tp){
       var t0 = (tp.down - R.w0) / R.tickMs, t1 = ((tp.up == null ? tp.down + 80 : tp.up) - R.w0) / R.tickMs;
+      if (tp.extra && t0 < 0) { t1 = Math.max(t1, 0.2); t0 = 0; }   // X117: a stray tap just before beat 1 is drawn at the start of the first line instead of vanishing
       segs(t0, Math.max(t1, t0 + 0.12)).forEach(function(g){ svgEl("rect", { x: g.x0, y: g.y + 128, width: Math.max(5, g.x1 - g.x0), height: 22, rx: 5, fill: tp.extra ? "#c0392b" : "#3a7bd5", opacity: .95, stroke: tp.extra ? "#7a1f16" : "none", "stroke-width": tp.extra ? 2 : 0 }).appendChild(document.createElementNS(R.geo.ns, "title")).textContent = tp.extra ? "An extra note: nothing was written here" : "What you played"; });
     });
     var lg2 = svgEl("text", { x: 6, y: R.geo.topPad + 92, "font-size": 10, fill: "#777" }); lg2.textContent = "should play";
@@ -1501,9 +1706,10 @@
     if (R.hadResult) { drawStaff(); R.hadResult = false; }
     drawLane();
     var a0 = c.currentTime + 0.25, perfA0;
-    try { var ts = c.getOutputTimestamp && c.getOutputTimestamp(); if (ts && ts.contextTime > 0 && ts.performanceTime > 0) perfA0 = ts.performanceTime + (a0 - ts.contextTime) * 1000; } catch (e) {}
-    if (perfA0 == null) perfA0 = performance.now() + (a0 - c.currentTime) * 1000 + ((c.outputLatency || 0) + (c.baseLatency || 0)) * 1000;
+    R.a0 = a0; R.amap = []; R.lastMap = 0;
+    perfA0 = performance.now() + (a0 - c.currentTime) * 1000 + ((c.outputLatency || 0) + (c.baseLatency || 0)) * 1000;   // first guess only; sampleMap() replaces it with the median of many audio-clock readings during the count-in
     R.w0 = perfA0 + T.ticks * R.tickMs;   // when tick 0 (the first note) is heard
+    sampleMap();
     var total = R.ex.measures.length * T.ticks, cstep = T.compound ? 2 : 4, bstep = T.beat, ms = R.tickMs / 1000;
     R.tokens = countTokens(T);
     R.tokens.forEach(function(t, k){ blip(a0 + t.tick * ms, (k === 0 || (T.compound && t.tick % 6 === 0)) ? 1500 : 1000, 0.07, 0.6, "square"); });
@@ -1514,9 +1720,23 @@
     var ph = R.geo.ph; ph.setAttribute("visibility", "hidden"); 
     setBtns(); cancelAnimationFrame(raf); raf = requestAnimationFrame(frame);
   }
+  // X117: where the audio clock sits on the page clock is read many times (every ~60 ms through the count-in and the try) and the MIDDLE reading is used, so one noisy
+  // reading (or the browser switching between ways of estimating the speaker delay) can no longer move every note's expected time by tens of milliseconds.
+  function sampleMap(){
+    if (!R || !AC || R.a0 == null) return;
+    try {
+      var ts = AC.getOutputTimestamp && AC.getOutputTimestamp();
+      if (ts && ts.contextTime > 0 && ts.performanceTime > 0) {
+        R.amap.push(ts.performanceTime - ts.contextTime * 1000); if (R.amap.length > 90) R.amap.shift();
+        var a = R.amap.slice().sort(function(x, y){ return x - y; }), P0 = a.length % 2 ? a[(a.length - 1) / 2] : (a[a.length / 2 - 1] + a[a.length / 2]) / 2;
+        R.w0 = P0 + R.a0 * 1000 + R.ex.ts.ticks * R.tickMs; R.mapN = a.length;
+      }
+    } catch (e) {}
+  }
   function frame(){
     if (!R || (R.phase !== "count" && R.phase !== "run")) return;
-    var now = performance.now(), T = R.ex.ts, tick = (now - R.w0) / R.tickMs;
+    var now = performance.now(); if (now - R.lastMap > 60) { R.lastMap = now; sampleMap(); }
+    var T = R.ex.ts, tick = (now - R.w0) / R.tickMs;
     if (R.phase === "count" && tick >= 0) R.phase = "run";
     var cstep = T.compound ? 2 : 4;
     if (tick < 0) { var ci = -1, el0 = tick + T.ticks; R.tokens.forEach(function(t, k){ if (el0 >= t.tick) ci = k; }); if (ci !== R.lastCount && ci >= 0) { R.lastCount = ci; drawCount(ci); } }
@@ -1544,15 +1764,18 @@
     if (!noScore && R.phase === "run" && R.taps.length) { finishRun(); return; }
     R.phase = "ready"; R.held = {}; var h = host; if (h) { showReady(); h.querySelector("#rMsg").textContent = noScore ? "The try ended because the screen left full screen." : "Stopped."; setBtns(); }
   }
-  function failRun(why){   // X115: leaving full screen / Escape: the try is over, it counts as failed, and this rhythm is not offered again (a new one comes next)
+  function failRun(why){   // X115: leaving full screen / Escape: the try is over, it counts as failed, and this rhythm is not offered again (a new one comes next). X117: once the rhythm itself had begun, the boxes of that try are shown
     if (!R || (R.phase !== "count" && R.phase !== "run")) return;
-    cancelAnimationFrame(raf); toneAll(); stopSched(); R.held = {};
+    var wasRun = R.phase === "run" && !R.warm;
+    cancelAnimationFrame(raf); toneAll(); stopSched(); Object.keys(R.held).forEach(function(k){ tapUp(k, performance.now()); }); R.held = {};
     if (R.warm) { R.phase = "ready"; R.taps = []; R.held = {}; drawLane(); drawCount(-1); host.querySelector("#rMsg").innerHTML = "The warm-up stopped (" + esc(why) + ") Press any key to try it again."; setBtns(); return; }
     var lv = levels[R.lv], res = rResults(), r = res[lv.id] || (res[lv.id] = { tries: 0, passes: 0, best: null });
     r.tries++; r.h2 = (r.h2 || []).concat(0).slice(-20); if (r.best == null) r.best = 0; ls("rhythm-results", JSON.stringify(res));
     evt("ss-attempt", { title: "Rhythm: " + lv.name, mode: "practice", ok: false });
-    R.phase = "ready"; R.needNew = R.lv > 0; R.tries = 1; R.colors = null; R.restColors = null;
-    drawLane(); drawCount(-1); var h = host; h.querySelector("#rMsg").innerHTML = '<span class="big no">Try failed.</span> ' + esc(why) + (R.lv > 0 ? " You get a new rhythm next." : ""); h.querySelector("#rDet").textContent = "";
+    var S = null; if (wasRun) { try { S = score(); applyColors(S); R.score = S; R.reveal = true; R.hadResult = true; } catch (e) { S = null; } }
+    R.phase = "ready"; R.needNew = R.lv > 0; R.tries = 1; if (!S) { R.colors = null; R.restColors = null; }
+    drawLane(); drawCount(-1); if (S) drawStaff(); var h = host; h.querySelector("#rMsg").innerHTML = '<span class="big no">Try failed.</span> ' + esc(why) + (R.lv > 0 ? " You get a new rhythm next." : ""); h.querySelector("#rDet").textContent = "";
+    h.querySelector("#rStart").style.display = R.lv > 0 ? "" : "none"; h.querySelector("#rAgain").style.display = R.lv > 0 ? "none" : ""; h.querySelector("#rNext").style.display = "none";
     var ph = R.geo && R.geo.ph; if (ph) ph.setAttribute("visibility", "hidden"); setBtns(); drawLevels();
   }
   function tryAgain(){ if (!R || !R.ex) return; if (R.afterWarm) { R.afterWarm = false; setLevel(R.lv); return; } if (R.warm && !R.ex) return; R.phase = "ready"; startRun(); }
@@ -1560,15 +1783,22 @@
     var r = generateExercise(0, { measures: 4 }); if (!r || !r.ex) { CAL.done = true; return; }
     r.ex.measures = r.ex.measures.slice(0, 1); R.ex = r.ex; R.warm = true; R.afterWarm = false; R.tempo = 60; host.querySelector("#rTempo").textContent = 60; R.phase = "ready"; R.taps = []; R.held = {}; R.tries = 0; CAL.offset = 0;
     host.querySelector("#rTitle").innerHTML = '<b>Warm-up</b> &middot; play the four quarter notes with the clicks (this happens once each time the page opens)';
-    R.colors = null; R.restColors = null; drawStaff(); showReady(); host.querySelector("#rMsg").innerHTML = 'Warm-up: you hear one measure of counting, then play the four notes. The game uses it to line up with your keyboard.'; setBtns(); drawLevels();
+    R.colors = null; R.restColors = null; R.reveal = false; R.score = null; drawStaff(); showReady(); host.querySelector("#rMsg").innerHTML = 'Warm-up: you hear one measure of counting, then play the four notes. The game uses it to line up with your keyboard.'; setBtns(); drawLevels();
     var tc = host.querySelector("#rCal"); if (tc) tc.textContent = "";
   }
   function finishWarm(S){
     var h = host, d = S.res.filter(function(r){ return r.dt != null; }).map(function(r){ return r.dt; }).sort(function(a, b){ return a - b; });
+    var uneven = false, med = 0;
     if (d.length >= 3) {
-      var med = d[Math.floor(d.length / 2)]; CAL.offset = Math.max(-250, Math.min(250, Math.round(med))); CAL.done = true; R.warm = false; R.afterWarm = true;
+      med = d.length % 2 ? d[(d.length - 1) / 2] : (d[d.length / 2 - 1] + d[d.length / 2]) / 2;   // X117: the real middle (with 4 taps the old pick always took the later of the two middle ones)
+      var mid = d.length >= 4 ? d.slice(1, -1) : d; uneven = (mid[mid.length - 1] - mid[0] > 110) && CAL.fails < 2;   // taps that wander by more than ~0.1 s say more about the player than the keyboard: ask once or twice more
+    }
+    if (d.length >= 3 && !uneven) {
+      CAL.offset = Math.max(-250, Math.min(250, Math.round(med))); CAL.done = true; R.warm = false; R.afterWarm = true;
       h.querySelector("#rMsg").innerHTML = '<span class="big okc">Warm-up done.</span> Press any key to start level ' + (R.lv + 1) + '.';
       h.querySelector("#rDet").textContent = isTeacher() ? "Teacher: your taps ran " + CAL.offset + " ms " + (CAL.offset >= 0 ? "late" : "early") + " on the warm-up; every later try is shifted by that." : "";
+    } else if (uneven) {
+      CAL.fails++; CAL.offset = 0; h.querySelector("#rMsg").innerHTML = 'Those four taps were uneven. Listen to the clicks and tap right with each one. Press any key to try the warm-up again.'; h.querySelector("#rDet").textContent = isTeacher() ? "Teacher: the middle taps were " + (d.length >= 4 ? d.slice(1, -1)[d.length - 3] - d[1] : 0) + " ms apart." : "";
     } else {
       CAL.fails++; CAL.offset = 0;
       if (CAL.fails >= 3) { CAL.done = true; R.warm = false; R.afterWarm = true; h.querySelector("#rMsg").innerHTML = "The warm-up could not hear enough taps, so it is skipped. Press any key to start."; }
@@ -1584,7 +1814,7 @@
   // A tap far from every note is an extra. If one tap is exactly as far from two notes, it is counted as LATE for the earlier note (students drift late far more often than early).
   function matchTaps(evs, taps, tm, close, T){
     var n = evs.length, m = taps.length, K = close, MISS = K, EX = K, INF = 1e12, i, j;
-    var W = evs.map(function(e, k){ var pg = k > 0 ? (e.abs - evs[k - 1].abs) * tm : 2 * T.beat * tm, ng = evs[k + 1] ? (evs[k + 1].abs - e.abs) * tm : 2 * T.beat * tm; return Math.max(close, Math.min(650, 0.48 * Math.min(pg, ng))); });
+    var W = evs.map(function(e, k){ var pg = k > 0 ? (e.abs - evs[k - 1].abs) * tm : (e.abs > 0 ? e.abs * tm : 2 * T.beat * tm), ng = evs[k + 1] ? (evs[k + 1].abs - e.abs) * tm : 2 * T.beat * tm; return Math.max(close, Math.min(650, 0.48 * Math.min(pg, ng))); });
     function cost(a, b){ var d = taps[b].down - (R.w0 + evs[a].abs * tm), ad = Math.abs(d); return ad <= W[a] ? ad + (d < 0 ? 0.5 : 0) : INF; }
     var dp = [], k2; for (i = 0; i <= n; i++) { dp.push(new Array(m + 1)); }
     for (i = 0; i <= n; i++) for (j = 0; j <= m; j++) {
@@ -1609,8 +1839,6 @@
     var asg = matchTaps(E.evs, taps, tm, close, T);
     E.evs.forEach(function(e, i){
       var exp = R.w0 + e.abs * tm, best = -1, bd = 1e9;
-      var pg = i > 0 ? (e.abs - E.evs[i - 1].abs) * tm : 2 * T.beat * tm, ng = E.evs[i + 1] ? (E.evs[i + 1].abs - e.abs) * tm : 2 * T.beat * tm;
-      var W = Math.max(close, Math.min(650, 0.48 * Math.min(pg, ng)));   // X115: a tap this near is "that note, played early / late", not just "wrong"
       best = asg[i]; if (best >= 0) bd = Math.abs(taps[best].down - exp);
       var r = { i: i, onset: "miss", hold: "na", dt: null };
       total += 1; onN++;
@@ -1633,14 +1861,18 @@
     var avg = dts.length ? dts.reduce(function(a, b){ return a + b; }, 0) / dts.length : 0;
     return { res: res, ratio: ratio, pass: ratio >= J0.pass, onN: onN, onOk: onOk, holdN: holdN, holdOk: holdOk, extra: extra, avg: Math.round(avg), matched: dts.length };
   }
+  function applyColors(S, COL){
+    COL = COL || { good: "#1a8a4a", close: "#d89a00", miss: "#c0392b" };
+    R.colors = {}; R.restColors = {};
+    S.res.forEach(function(r){ var e = R.E.evs[r.i], k = r.onset === "good" && (r.hold === "good" || r.hold === "na") ? "good" : r.onset === "miss" ? "miss" : "close"; r.k = k; R.colors[e.abs] = COL[k]; });
+    R.E.rests.forEach(function(rs){ var lo = rs.abs === 0 ? -99 : rs.abs - 0.5, bad = R.taps.some(function(tp){ if (tp.count) return false; var tk = (tp.down - R.w0) / R.tickMs; return tp.extra && tk >= lo && tk < rs.abs + rs.ticks - 0.5; }); R.restColors[rs.abs] = bad ? COL.miss : COL.good; });   // X117: a stray tap before the very first beat counts against a rest on beat 1
+  }
   function finishRun(){
     cancelAnimationFrame(raf); toneAll(); stopSched(); if (!R) return;
     Object.keys(R.held).forEach(function(k){ tapUp(k, performance.now()); });
     R.phase = "done"; R.doneAt = performance.now(); var S = score(), h = host, lv = levels[R.lv]; R.needNew = !!S.pass;
     var teacher = isTeacher(), COL = { good: "#1a8a4a", close: "#d89a00", miss: "#c0392b" };
-    R.colors = {}; R.restColors = {};
-    S.res.forEach(function(r){ var e = R.E.evs[r.i], k = r.onset === "good" && (r.hold === "good" || r.hold === "na") ? "good" : r.onset === "miss" ? "miss" : "close"; r.k = k; R.colors[e.abs] = COL[k]; });
-    R.E.rests.forEach(function(rs){ var bad = R.taps.some(function(tp){ if (tp.count) return false; var tk = (tp.down - R.w0) / R.tickMs; return tp.extra && tk >= rs.abs - 0.5 && tk < rs.abs + rs.ticks - 0.5; }); R.restColors[rs.abs] = bad ? COL.miss : COL.good; });
+    applyColors(S, COL);
     R.hadResult = true; R.score = S; R.reveal = true; drawLane(); drawStaff();
     if (R.warm || R.afterWarm) { finishWarm(S); h.querySelector("#rStart").style.display = "none"; h.querySelector("#rAgain").style.display = "none"; h.querySelector("#rNext").style.display = "none"; var ph0 = h.querySelector("#rPh"); if (ph0) ph0.style.display = "none"; R.geo.ph.setAttribute("visibility", "hidden"); drawCount(-1); R.needNew = false; return; }   // the warm-up is not a scored try
     // the written notes turn green / yellow / red, and the boxes (should play) and bars (you played) sit directly under them
@@ -1659,7 +1891,7 @@
     drawLevels();
     var ph = h.querySelector("#rPh"); if (ph) ph.style.display = "none"; R.geo.ph.setAttribute("visibility", "hidden"); drawCount(-1);
   }
-  window.ssRhythmTest = { score: function(){ return R && R.ex ? score() : null; }, state: function(){ return R; }, levels: function(){ return levels; } };
+  window.ssRhythmTest = { score: function(){ return R && R.ex ? score() : null; }, state: function(){ return R; }, levels: function(){ return levels; }, setLevel: function(i){ setLevel(i); }, newExercise: function(){ newExercise(); } };
 
   // =====================================================================
   // SONGS: the teacher's Workbook song drawn with VexFlow + a virtual keyboard (mouse, touch, computer keys)
@@ -1677,6 +1909,8 @@
   function freqOf(midi){ return 440 * Math.pow(2, (midi - 69) / 12); }
   var SG = null;
   function songBeats(n){ var b = { w: 4, h: 2, q: 1, "8": 0.5, "16": 0.25 }[String(n.d)] || 1; return n.dot ? b * 1.5 : b; }
+  // X117: piano note names are a helper that is OFF everywhere (students and test computers). Only the teacher preview in the panel has a checkbox for it.
+  function nmOn(){ return !!(PREVIEWISH && lg("songs-names") === "1"); }
   function songList(){ return (SC().songs || []).filter(function(s){ return s && s.notes && s.notes.length; }); }
 
   function todayStr(){ var d = new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
@@ -1686,10 +1920,11 @@
   function songLocked(s){ return !!s.extra && s.ui === SC().songsCur && lg("songs-unlock") !== todayStr(); }
   function openSongs(){
     var list = songList(); if (!list.length) return;
-    var body = openHost("songs", "Songs", '<span class="ctl" id="sMidi"></span>');
+    var body = openHost("songs", "Songs", '<span class="ctl" id="sMidi"></span>' + (PREVIEWISH ? '<label class="ctl" title="Teacher preview only: students and test computers never show note names"><input type="checkbox" id="sNm"> Show note names on the keys (helper)</label>' : ""));
     body.innerHTML = '<div class="ssg-side" id="sList"></div><div class="ssg-main" style="padding-bottom:6px"><div class="ssg-sub" id="sTitle"></div><div class="ssg-staff" id="sStaff"></div><div class="ssg-sub" id="sHelp">Use your keyboard, a touch-screen, or a connected digital piano to play</div><div class="ssg-sub" id="sHelp2" style="color:#a35a00"></div><div class="ssg-kb" id="sKb"></div></div>';
     SG = { song: null, down: {}, ptr: {}, keys: {}, midi: null, map: {}, win: 0, whites: [] };
     var h = host;
+    var nmBox = h.querySelector("#sNm"); if (nmBox) { nmBox.checked = nmOn(); nmBox.onchange = function(){ ls("songs-names", this.checked ? "1" : "0"); if (SG && SG.song) { drawKeyboard(); markKeys(); try { sizeKb(); } catch (e) {} } }; }
     var lastUnit = null, today = todayStr();
     h.querySelector("#sList").innerHTML = list.map(function(s, i){ var hd = ""; if (s.unitId !== lastUnit) { lastUnit = s.unitId; hd = '<div class="ssg-grp">' + esc(s.unit || "Songs") + '</div>'; }
       var st = songStatus(s, today), lk = songLocked(s);
@@ -1751,7 +1986,7 @@
     var kb = host.querySelector("#sKb"), whites = [], i, h = "";
     for (var m0 = SG.kbLo; m0 <= SG.kbHi; m0++) if (WHITE_IN_OCT.indexOf(((m0 % 12) + 12) % 12) >= 0) whites.push(m0);
     SG.whites = whites; var n = whites.length, w = 100 / n;
-    whites.forEach(function(m, i){ h += '<div class="wk' + (m % 12 === 0 ? " c" + (Math.floor(m / 12) - 1) : "") + '" data-m="' + m + '" style="left:' + (i * w) + '%;width:' + w + '%"><u class="nm">' + (isTeacher() ? "CDEFGAB"[[0, 2, 4, 5, 7, 9, 11].indexOf(((m % 12) + 12) % 12)] + (m % 12 === 0 ? (Math.floor(m / 12) - 1) : "") : "") + '</u><span></span></div>'; });
+    whites.forEach(function(m, i){ h += '<div class="wk' + (m % 12 === 0 ? " c" + (Math.floor(m / 12) - 1) : "") + '" data-m="' + m + '" style="left:' + (i * w) + '%;width:' + w + '%"><u class="nm">' + (nmOn() ? "CDEFGAB"[[0, 2, 4, 5, 7, 9, 11].indexOf(((m % 12) + 12) % 12)] + (m % 12 === 0 ? (Math.floor(m / 12) - 1) : "") : "") + '</u><span></span></div>'; });
     whites.forEach(function(m, i){ var off = m % 12; if (BLACK_AFTER[off] != null && i < n - 1 && whites[i + 1] === m + 2) h += '<div class="bk" data-m="' + (m + 1) + '" style="left:' + ((i + 1) * w - w * 0.3) + '%;width:' + (w * 0.6) + '%"><span></span></div>'; });
     kb.innerHTML = h; sizeKb();
     var down = function(ev){ var k = ev.target.closest && ev.target.closest("[data-m]"); if (!k) return; ev.preventDefault(); var m = +k.getAttribute("data-m"), id = "p:" + ev.pointerId; SG.ptr[ev.pointerId] = m; press(m, id); try { kb.setPointerCapture(ev.pointerId); } catch (e) {} };
@@ -1779,8 +2014,27 @@
     var hp = host.querySelector("#sHelp2"); if (hp) var span = 0; W.forEach(function(m){ if (m >= SG.lo && m <= SG.hi) span++; }); hp.textContent = W.length > 11 ? (span > 11 ? "This song is wider than the letter keys: press the left and right arrow keys to slide the letters along the piano." : "Left and right arrow keys move the letters along the piano.") : ""; hp.style.color = span > 11 ? "#a35a00" : "#8a8aa0";
     var c4 = kb.querySelector('[data-m="60"]'); if (c4) c4.title = "middle C";
   }
+  function wbCss(){
+    if (document.getElementById("ssgWbCss")) return; var st = document.createElement("style"); st.id = "ssgWbCss";
+    st.textContent = ".ssg-wbl{zoom:1.55;width:700px;max-width:100%;margin:6px auto 0;color:#000;font-family:Arial,Helvetica,sans-serif}.ssg-wbl .wb-inst{font-size:12px;font-style:italic;text-align:center;margin:0 0 6px}" +
+      ".wb-cells{margin-top:8px;}.wb-free .wb-mg,.wb-free .wb-mg.wb-end{border-right:none;padding-right:0;margin-right:0;}.wb-icons{margin-top:8px;}.wb-icons svg{overflow:visible;}.wb-restdash{display:inline-block;width:26px;height:0;border-top:6px solid #111;border-radius:3px;vertical-align:middle;}" +
+      ".wb-cell{position:relative;flex:0 0 46px;width:46px;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;}.wb-cline{display:flex;margin:0 0 calc(14px + var(--sysgap,0px));}.wb-icons>svg{margin-bottom:var(--sysgap,0px);}" +
+      ".wb-ngl{justify-content:center;flex-wrap:nowrap;}.wb-ng{display:flex;margin-right:0;flex:0 0 auto;}.wb-ngl .wb-cell{flex:0 0 40px !important;width:40px !important;}.wb-cells .wb-cline:last-child{margin-bottom:0;}" +
+      ".wb-mg{display:flex;border-right:1.5px solid #000;padding-right:4px;margin-right:4px;}.wb-mg.wb-end{border-right:4px double #000;}.wb-full .wb-mg{flex:1 1 0;}.wb-full .wb-cell{flex:1 1 0;}" +
+      ".wb-cell b{font-size:26px;line-height:1;font-weight:bold;white-space:nowrap;}.wb-cell.wb-ac{flex:0 0 58px;width:58px;}.wb-ngl .wb-cell.wb-ac{flex:0 0 56px !important;width:56px !important;}.wb-full .wb-cell.wb-ac{flex:1.3 1 0;}" +
+      ".wb-acc{font-family:'Segoe UI Symbol','Arial Unicode MS','Apple Symbols',Arial,sans-serif;font-weight:bold;font-size:.78em;margin-left:3px;position:relative;top:-.08em;}.wb-cell i{font-style:normal;font-size:11px;min-height:13px;color:#222;}";
+    document.head.appendChild(st);
+  }
   function drawScore(s){
     var el0 = host.querySelector("#sStaff");
+    if (s.ex && typeof WBX !== "undefined" && WBX.drawCells && (s.ex.display === "names" || s.ex.display === "fingers" || s.ex.display === "icons")) {   // X117: a worksheet shown as letters / finger numbers / pictures looks the same here
+      try {
+        wbCss(); el0.innerHTML = ""; var wrap = document.createElement("div"); wrap.className = "ssg-wbl"; var inner = document.createElement("div"); inner.className = "wbpage"; wrap.appendChild(inner); el0.appendChild(wrap);
+        WBX.drawCells(inner, JSON.parse(JSON.stringify(s.ex)));
+        var ins = s.ex.hideInst ? "" : String(s.ex.instructions || ""); if (ins) { var di = document.createElement("div"); di.className = "wb-inst"; di.textContent = ins; wrap.insertBefore(di, inner); }
+        if (inner.querySelector(".wb-cell, svg")) return;
+      } catch (e) { console.warn("Workbook letters layout failed, using the staff", e); window.__wbFail = "the Workbook letters drawing failed: " + String(e && e.message || e).slice(0, 120); }
+    }
     if (s.ex && window.VexFlow && typeof WBX !== "undefined") {
       try { el0.innerHTML = ""; var res = WBX.renderScore(el0, JSON.parse(JSON.stringify(s.ex)), { width: 720 }); var sv = el0.querySelector("svg"); if (sv) { sv.style.maxWidth = "100%"; sv.style.height = "auto"; } if (el0.querySelector("svg")) return; } catch (e) { console.warn("Workbook renderer failed, using the simple one", e); window.__wbFail = "the Workbook drawing code failed: " + String(e && e.message || e).slice(0, 120); }
     }

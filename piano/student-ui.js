@@ -2,7 +2,7 @@
    session timer, the "show my session" screen, today's focus message, and the teacher-only controls blocked. */
 (function(){
   "use strict";
-  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X117";   // X101 (c13): failing class tests need no PIN; a test cut off by the end of class is saved as a practice test with the score so far
+  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X118";   // X101 (c13): failing class tests need no PIN; a test cut off by the end of class is saved as a practice test with the score so far
   function lg(k){ try { return localStorage.getItem(P + k); } catch (e) { return null; } }
   function ls(k, v){ try { localStorage.setItem(P + k, v); } catch (e) {} }
   function jget(k, d){ try { var v = JSON.parse(lg(k)); return v == null ? d : v; } catch (e) { return d; } }
@@ -528,6 +528,7 @@
   // X104: a settings push that PAUSES the site covers the page at once (even in the middle of a question); un-pausing / other changes reload the page when it is idle (student-cloud.js)
   // X106: live answers from the cloud service (student-cloud.js): HOLD (learning / review is up or bell-work is off: the page is covered and counts nothing) and PAIRING (the page shows its device code until the teacher pairs it to a student on his own computer).
   var holdOv = null, pairOv = null;
+  try { var tq = /[?&]tester=(0|1)\b/.exec(location.search); if (tq) ls("tester", tq[1]); } catch (e) {}   // X118: open /piano/?tester=0 once on a computer to take its test mark off (?tester=1 puts it on)
   function isTester(){ return lg("tester") === "1"; }   // X111: a test computer stays marked until the teacher unmarks it (PIN)
   function skipPair(){ return !!jget("nopair:" + dstr(), false) || isTester(); }
   function showPair(code){   // X108: the code is large, and it is shown by the page itself the moment it opens (no wait for the first answer from the service)

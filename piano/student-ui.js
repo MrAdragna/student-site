@@ -2,7 +2,7 @@
    session timer, the "show my session" screen, today's focus message, and the teacher-only controls blocked. */
 (function(){
   "use strict";
-  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X118";   // X101 (c13): failing class tests need no PIN; a test cut off by the end of class is saved as a practice test with the score so far
+  var P = window.SS_PREFIX || "ss:"; window.SS_BUILD = "X119";   // X101 (c13): failing class tests need no PIN; a test cut off by the end of class is saved as a practice test with the score so far
   function lg(k){ try { return localStorage.getItem(P + k); } catch (e) { return null; } }
   function ls(k, v){ try { localStorage.setItem(P + k, v); } catch (e) {} }
   function jget(k, d){ try { var v = JSON.parse(lg(k)); return v == null ? d : v; } catch (e) { return d; } }
@@ -101,7 +101,8 @@
   var sess = null, lastAct = Date.now(), tick = null, schedKnown = false;
   var SFIELDS = ["openSec", "idleSec", "offSec", "lastOffSec", "lastOffAt", "fsExits", "fsLast", "synth", "stills"];
   function hasSched(){ return schedKnown; }
-  var TESTCLASS = /[?&]cloudtest=1(&|$)/.test(location.search);   // X105: a page opened with ?cloudtest=1 behaves as if class is in session (cover, full screen, PIN tests, sidebar, check-ins)
+  var TESTCLASS = /[?&]cloudtest=1(&|$)/.test(location.search);
+  if (TESTCLASS) { try { if (!/\(CloudTest\)/.test(document.title)) document.title += " (CloudTest)"; } catch (e) {} }   // X119: tab title says (CloudTest) after the main title   // X105: a page opened with ?cloudtest=1 behaves as if class is in session (cover, full screen, PIN tests, sidebar, check-ins)
   window.ssTestClass = TESTCLASS;
   function inClass(){ return TESTCLASS || (schedKnown && !!period()); }   // X99b: no class times published = never "class" (no full-screen force, no PIN for tests)
   function bucketNow(){ var per = period(); return dstr() + ":" + (inClass() ? "c" + (per ? per.start : "") : "o"); }

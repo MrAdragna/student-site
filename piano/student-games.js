@@ -1,4 +1,4 @@
-/* student-games.js (X120: judging bands + credit per band, extra-tap cap, "Not tried" for count-in exits, calibration saved once per computer; X112: Songs are drawn by the Workbook's own renderer (extracted from Workbook.js 4.67), home-row piano, due/current badges, locked extras (teacher PIN), last-5 dots, follower line per level, live tap bars, teacher "count as right / wrong"; X111, c13, 19 Nov 2026; X111 = games sit under the game bar, Songs grouped by unit with a keyboard that fits the song + MIDI, Rhythm: 4 measures at tempo 60, count-in above the music, results hidden until you finish, optional follower line, levels unlock in order, timing numbers from the teacher panel). Two extra games for the student site, loaded by student-ui.js:
+/* student-games.js (X121: judging bands + credit per band, extra-tap cap, "Not tried" for count-in exits, calibration saved once per computer; X112: Songs are drawn by the Workbook's own renderer (extracted from Workbook.js 4.67), home-row piano, due/current badges, locked extras (teacher PIN), last-5 dots, follower line per level, live tap bars, teacher "count as right / wrong"; X111, c13, 19 Nov 2026; X111 = games sit under the game bar, Songs grouped by unit with a keyboard that fits the song + MIDI, Rhythm: 4 measures at tempo 60, count-in above the music, results hidden until you finish, optional follower line, levels unlock in order, timing numbers from the teacher panel). Two extra games for the student site, loaded by student-ui.js:
    RHYTHM  = tap the rhythm on the keyboard (Space or any key; key down AND key up are judged). The rhythms come from the teacher's RhythmRandomizer levels
              (published in the site settings as `rhythm`; without them the 13 built-in RhythmRandomizer levels are used). The generator below is copied from
              RhythmRandomizer.js v29 (registries, level model, fits / fillMeasure / generateOnce); nothing else of that app is used.
@@ -1497,7 +1497,7 @@
   function openRhythm(){
     if (!window.VexFlow) { alert("The music drawing code did not load. Reload the page."); return; }
     if (!levels.length) loadLevels();
-    var body = openHost("rhythm", "Rhythm", '<span class="ssg-ver">games X120</span>' + '<span class="ctl">Tempo <button type="button" class="ssg-btn sm" id="rSlow">&minus;</button><b id="rTempo"></b><button type="button" class="ssg-btn sm" id="rFast">+</button></span>' + '<span class="ctl"><label><input type="checkbox" id="rFollow"> Follow notes</label></span>' +
+    var body = openHost("rhythm", "Rhythm", '<span class="ssg-ver">games X121</span>' + '<span class="ctl">Tempo <button type="button" class="ssg-btn sm" id="rSlow">&minus;</button><b id="rTempo"></b><button type="button" class="ssg-btn sm" id="rFast">+</button></span>' + '<span class="ctl"><label><input type="checkbox" id="rFollow"> Follow notes</label></span>' +
       '<span class="ctl" id="rTeach" style="display:none" title="Teacher only">Teacher: <span id="rCal"></span> <button type="button" class="ssg-btn sm" id="rRewarm">Redo warm-up</button> <label><input type="checkbox" id="rOpenAll"> open every level</label> <button type="button" class="ssg-btn sm" id="rResetLv" title="Forget every level\'s tries on this computer">Reset all levels</button> <button type="button" class="ssg-btn sm" id="rResetOne" title="Forget the tries of this level">Reset this level</button> <button type="button" class="ssg-btn sm" id="rClearOne" title="Count this level as cleared">Clear this level</button></span>');
     body.innerHTML = '<div class="ssg-side" id="rLevels"></div><div class="ssg-main"><div class="ssg-sub" id="rTitle"></div><div class="ssg-count" id="rCount"></div><div class="ssg-staff" id="rStaff"></div><div class="ssg-lane" id="rLane"></div>' +
       '<div class="ssg-msg" id="rMsg"></div><div class="ssg-sub" id="rDet"></div><div class="ssg-btns"><button type="button" class="ssg-btn primary" id="rStart">Start</button><button type="button" class="ssg-btn" id="rAgain" style="display:none">Try again</button><button type="button" class="ssg-btn" id="rStop" disabled>Backspace to stop</button><button type="button" class="ssg-btn" id="rNew">N for new rhythm</button><button type="button" class="ssg-btn" id="rNext" style="display:none">Next level</button></div>' +
@@ -1602,7 +1602,7 @@
     var renderer = new VF.Renderer(hostEl, VF.Renderer.Backends.SVG); renderer.resize(W, H);
     var ctx = renderer.getContext(), svg = hostEl.querySelector("svg");
     if (svg) { svg.setAttribute("viewBox", "0 0 " + W + " " + H); svg.removeAttribute("width"); svg.removeAttribute("height"); svg.style.width = "100%"; svg.style.height = "auto"; }
-    var refs = [], mEnd = [], mStart = [], absBase = 0;
+    var refs = [], mEnd = [], mStart = [], absBase = 0, lastCc = null;
     ex.measures.forEach(function(ms, mi){
       var lay = layout[mi], y = topPad + lay.row * rowH, stave = new VF.Stave(lay.x, y, lay.w);
       stave.setConfigForLines([{ visible: false }, { visible: false }, { visible: true }, { visible: false }, { visible: false }]);
@@ -1615,7 +1615,7 @@
         var d = DURV[p.ticks], note;
         if (fullRest) note = new VF.StaveNote({ keys: ["b/4"], duration: "wr", alignCenter: true });
         else { note = new VF.StaveNote({ keys: ["b/4"], duration: d.d + (p.rest ? "r" : ""), dots: d.dots, stemDirection: 1 }); if (d.dots) VF.Dot.buildAndAttach([note], { all: true }); }
-        var cc = p.rest ? (R.restColors && R.restColors[absBase + p.pos]) : (R.colors && R.colors[absBase + p.pos]); if (cc) { try { note.setStyle({ fillStyle: cc, strokeStyle: cc }); if (note.setStemStyle) note.setStemStyle({ fillStyle: cc, strokeStyle: cc }); if (note.setFlagStyle) note.setFlagStyle({ fillStyle: cc, strokeStyle: cc }); } catch (e) {} }
+        var cc = p.rest ? (R.restColors && R.restColors[absBase + p.pos]) : (p.tiedPrev && lastCc ? lastCc : (R.colors && R.colors[absBase + p.pos])); if (!p.rest) lastCc = cc;   // X121: the second half of a tie takes the colour of the note it continues if (cc) { try { note.setStyle({ fillStyle: cc, strokeStyle: cc }); if (note.setStemStyle) note.setStemStyle({ fillStyle: cc, strokeStyle: cc }); if (note.setFlagStyle) note.setFlagStyle({ fillStyle: cc, strokeStyle: cc }); } catch (e) {} }
         notes.push(note); refs.push({ part: p, note: note, abs: absBase + p.pos, y: y, m: mi, cx: 0 });
       });
       var voice = new VF.Voice({ numBeats: T.num, beatValue: T.den }).setMode(VF.Voice.Mode.SOFT); voice.addTickables(notes);
@@ -1637,7 +1637,7 @@
       var k = 0; for (var q = 0; q < refs.length; q++) if (refs[q].abs <= abs) k = q; else break;
       var r = refs[k], nxt = refs[k + 1];
       if (r.abs === abs) return { x: r.cx, y: r.y };
-      var endTick = (nxt && nxt.m === r.m) ? nxt.abs : (r.m + 1) * T.ticks, endX = (nxt && nxt.m === r.m) ? nxt.cx : mEnd[r.m] - 8, f = (abs - r.abs) / Math.max(1, endTick - r.abs);
+      var endTick = (nxt && nxt.m === r.m) ? nxt.abs : (r.m + 1) * T.ticks, endX = (nxt && nxt.m === r.m) ? nxt.cx : (nxt && layout[nxt.m].row === layout[r.m].row) ? nxt.cx : mEnd[r.m] - 8, f = (abs - r.abs) / Math.max(1, endTick - r.abs);
       return { x: r.cx + (endX - r.cx) * f, y: r.y };
     }
     var ns = "http://www.w3.org/2000/svg", ph = document.createElementNS(ns, "line"); ph.setAttribute("class", "ssgph"); ph.setAttribute("stroke", "#e9a31a"); ph.setAttribute("stroke-width", "4"); ph.setAttribute("stroke-linecap", "round"); ph.setAttribute("visibility", "hidden"); svg.appendChild(ph);
@@ -1908,7 +1908,7 @@
     var pct = S.ratio >= 1 ? 100 : Math.min(99, Math.floor(S.ratio * 100));   // X118: 100% only when nothing is off
     h.querySelector("#rMsg").innerHTML = S.pass ? '<span class="big okc">Got it! ' + pct + '%</span>' + (cleared(lv) ? ' <b>Level cleared!</b>' : "") : '<span class="big no">Not yet. ' + pct + '%</span>';
     var bits = [];   // X120: the three count lines were removed
-    if (S.matched >= 3 && Math.abs(S.avg) >= 40) bits.push("You tapped about <b>" + Math.abs(S.avg) + " ms " + (S.avg > 0 ? "late" : "early") + "</b> on average");
+    if (S.matched >= 3 && Math.abs(S.avg) >= 40) { var aa = Math.abs(S.avg); bits.push("You were <b>" + (aa < 80 ? "a little" : aa < 150 ? "a bit" : "quite") + " " + (S.avg > 0 ? "late" : "early") + "</b> on average."); }   // X121: plain words instead of milliseconds
     h.querySelector("#rDet").innerHTML = bits.join("<br>");
     var res = rResults(), r = res[lv.id] || (res[lv.id] = { tries: 0, passes: 0, best: null });
     r.tries++; if (S.pass) r.passes++; { r.h2 = (r.h2 || []).concat(S.pass ? 2 : (S.ratio >= J().yellow ? 1 : 0)).slice(-20); } if (r.best == null || S.ratio > r.best) r.best = S.ratio; ls("rhythm-results", JSON.stringify(res));

@@ -1,4 +1,4 @@
-/* student-games.js (X123: judging bands + credit per band, extra-tap cap, "Not tried" for count-in exits, calibration saved once per computer; X112: Songs are drawn by the Workbook's own renderer (extracted from Workbook.js 4.67), home-row piano, due/current badges, locked extras (teacher PIN), last-5 dots, follower line per level, live tap bars, teacher "count as right / wrong"; X111, c13, 19 Nov 2026; X111 = games sit under the game bar, Songs grouped by unit with a keyboard that fits the song + MIDI, Rhythm: 4 measures at tempo 60, count-in above the music, results hidden until you finish, optional follower line, levels unlock in order, timing numbers from the teacher panel). Two extra games for the student site, loaded by student-ui.js:
+/* student-games.js (X124: judging bands + credit per band, extra-tap cap, "Not tried" for count-in exits, calibration saved once per computer; X112: Songs are drawn by the Workbook's own renderer (extracted from Workbook.js 4.67), home-row piano, due/current badges, locked extras (teacher PIN), last-5 dots, follower line per level, live tap bars, teacher "count as right / wrong"; X111, c13, 19 Nov 2026; X111 = games sit under the game bar, Songs grouped by unit with a keyboard that fits the song + MIDI, Rhythm: 4 measures at tempo 60, count-in above the music, results hidden until you finish, optional follower line, levels unlock in order, timing numbers from the teacher panel). Two extra games for the student site, loaded by student-ui.js:
    RHYTHM  = tap the rhythm on the keyboard (Space or any key; key down AND key up are judged). The rhythms come from the teacher's RhythmRandomizer levels
              (published in the site settings as `rhythm`; without them the 13 built-in RhythmRandomizer levels are used). The generator below is copied from
              RhythmRandomizer.js v29 (registries, level model, fits / fillMeasure / generateOnce); nothing else of that app is used.
@@ -1497,7 +1497,7 @@
   function openRhythm(){
     if (!window.VexFlow) { alert("The music drawing code did not load. Reload the page."); return; }
     if (!levels.length) loadLevels();
-    var body = openHost("rhythm", "Rhythm", '<span class="ssg-ver">games X123</span>' + '<span class="ctl">Tempo <button type="button" class="ssg-btn sm" id="rSlow">&minus;</button><b id="rTempo"></b><button type="button" class="ssg-btn sm" id="rFast">+</button></span>' + '<span class="ctl"><label><input type="checkbox" id="rFollow"> Follow notes</label></span>' +
+    var body = openHost("rhythm", "Rhythm", '<span class="ssg-ver">games X124</span>' + '<span class="ctl">Tempo <button type="button" class="ssg-btn sm" id="rSlow">&minus;</button><b id="rTempo"></b><button type="button" class="ssg-btn sm" id="rFast">+</button></span>' + '<span class="ctl"><label><input type="checkbox" id="rFollow"> Follow notes</label></span>' +
       '<span class="ctl" id="rTeach" style="display:none" title="Teacher only">Teacher: <span id="rCal"></span> <button type="button" class="ssg-btn sm" id="rRewarm">Redo warm-up</button> <label><input type="checkbox" id="rOpenAll"> open every level</label> <button type="button" class="ssg-btn sm" id="rResetLv" title="Forget every level\'s tries on this computer">Reset all levels</button> <button type="button" class="ssg-btn sm" id="rResetOne" title="Forget the tries of this level">Reset this level</button> <button type="button" class="ssg-btn sm" id="rClearOne" title="Count this level as cleared">Clear this level</button></span>');
     body.innerHTML = '<div class="ssg-side" id="rLevels"></div><div class="ssg-main"><div class="ssg-sub" id="rTitle"></div><div class="ssg-count" id="rCount"></div><div class="ssg-staff" id="rStaff"></div><div class="ssg-lane" id="rLane"></div>' +
       '<div class="ssg-msg" id="rMsg"></div><div class="ssg-sub" id="rDet"></div><div class="ssg-btns"><button type="button" class="ssg-btn primary" id="rStart">Start</button><button type="button" class="ssg-btn" id="rAgain" style="display:none">Try again</button><button type="button" class="ssg-btn" id="rStop" disabled>Backspace to stop</button><button type="button" class="ssg-btn" id="rNew">N for new rhythm</button><button type="button" class="ssg-btn" id="rNext" style="display:none">Next level</button></div>' +
@@ -1660,7 +1660,7 @@
   function drawUnder(){
     var S = R.score, E = R.E, T = R.ex.ts, teacher = isTeacher();
     var FILL = FILL5, EDGE = COL5;
-    E.rests.forEach(function(rs){ var rc = R.restColors && R.restColors[rs.abs], bad = rc === "#c0392b", na = rc === "#8a8a8a"; segs(rs.abs, rs.abs + rs.ticks).forEach(function(g, gi){ svgEl("rect", { x: g.x0, y: g.y + 96, width: g.x1 - g.x0, height: 26, rx: 5, fill: bad ? "#fbdcd8" : na ? "#eeeeee" : "#e3f4e9", stroke: bad ? "#c0392b" : na ? "#999" : "#1a8a4a", "stroke-dasharray": "4 3", "stroke-width": 1.5 }); if (gi === 0 && !na) { var rt = svgEl("text", { x: g.x0 + (g.x1 - g.x0) / 2, y: g.y + 113, "text-anchor": "middle", "font-size": 12, "font-weight": 800, fill: bad ? "#c0392b" : "#1a8a4a", "pointer-events": "none" }); rt.textContent = bad ? ((g.x1 - g.x0) > 66 ? "stray note" : "\u2717") : "\u2713"; } }); });
+    E.rests.forEach(function(rs){ var rc = (R.restColors && R.restColors[rs.abs]) || COL5.good, st = rc === COL5.miss ? "bad" : rc === COL5.lit ? "part" : "ok", fl = { bad: "#fbdcd8", part: "#fff1c7", ok: "#e3f4e9" }[st], ed = { bad: "#c0392b", part: "#d89a00", ok: "#1a8a4a" }[st]; segs(rs.abs, rs.abs + rs.ticks).forEach(function(g, gi){ svgEl("rect", { x: g.x0, y: g.y + 96, width: g.x1 - g.x0, height: 26, rx: 5, fill: fl, stroke: ed, "stroke-dasharray": "4 3", "stroke-width": 1.5 }); if (gi === 0) { var rt = svgEl("text", { x: g.x0 + (g.x1 - g.x0) / 2, y: g.y + 113, "text-anchor": "middle", "font-size": 12, "font-weight": 800, fill: ed, "pointer-events": "none" }); rt.textContent = st === "bad" ? ((g.x1 - g.x0) > 66 ? (R.restStray && R.restStray[rs.abs] ? "stray note" : "missed") : "\u2717") : "\u2713"; } }); });
     S.res.forEach(function(r){
       var e = E.evs[r.i], early = r.dt != null && r.dt < 0, words = r.onset === "miss" ? ["missed"] : r.onset === "real" ? [early ? "way too early" : "way too late"] : r.onset === "ear" ? [early ? "too early" : "too late"] : [r.onset === "lit" ? (early ? "a bit early" : "a bit late") : "", r.hold === "short" ? "let go early" : r.hold === "long" ? "held long" : ""].filter(Boolean);
       if (r.split) words.unshift("stray note");
@@ -1893,11 +1893,19 @@
   function applyColors(S){
     R.colors = {}; R.restColors = {};
     S.res.forEach(function(r){ var e = R.E.evs[r.i]; r.k = noteKind(r); R.colors[e.abs] = COL5[r.k]; });
-    var nowT = (performance.now() - R.w0) / R.tickMs, okN = function(i){ return S.res[i] && S.res[i].onset !== "miss"; };
-    R.E.rests.forEach(function(rs){ var lo = rs.abs === 0 ? -99 : rs.abs - 0.5, endT = rs.abs + rs.ticks, bad = R.taps.some(function(tp){ if (tp.count) return false; var tk = (tp.down - R.w0) / R.tickMs; return tp.extra && tk >= lo && tk < endT - 0.5; });   // X117: a stray tap before the very first beat counts against a rest on beat 1
-      var bi = -1, ai = -1; R.E.evs.forEach(function(e, i){ if (e.abs < rs.abs) bi = i; else if (e.abs >= endT && ai < 0) ai = i; });
-      var ok = nowT >= endT - 0.01 && (bi >= 0 || ai >= 0) && (bi < 0 || okN(bi)) && (ai < 0 || okN(ai));   // X120: a rest is "correct" only if the exercise got that far and the notes on both sides were at least partly right; otherwise it is left grey
-      R.restColors[rs.abs] = bad ? COL5.miss : (ok ? COL5.good : "#8a8a8a"); });
+    var nowT = (performance.now() - R.w0) / R.tickMs; R.restStray = {};
+    // X124: every rest is right or wrong. A stray tap in it, or the exercise stopping before it, makes it wrong (red). Otherwise it is right if the note/rest before OR after it is orange or better: both sides fine = green, only one side = yellow (partly right); both sides red = wrong.
+    var rbad = {}; R.E.rests.forEach(function(rs){ var lo = rs.abs === 0 ? -99 : rs.abs - 0.5, endT = rs.abs + rs.ticks; rbad[rs.abs] = R.taps.some(function(tp){ if (tp.count) return false; var tk = (tp.down - R.w0) / R.tickMs; return tp.extra && tk >= lo && tk < endT - 0.5; }); });
+    var items = []; R.E.evs.forEach(function(e, i){ items.push({ a: e.abs, z: e.abs + e.ticks, ok: S.res[i] ? (S.res[i].k !== "real" && S.res[i].k !== "miss") : false }); }); R.E.rests.forEach(function(rs){ items.push({ a: rs.abs, z: rs.abs + rs.ticks, ok: !rbad[rs.abs], rest: rs.abs }); });
+    R.E.rests.forEach(function(rs){ var endT = rs.abs + rs.ticks, pv = null, nx = null;
+      items.forEach(function(it){ if (it.rest === rs.abs) return; if (it.z <= rs.abs + 0.01 && (!pv || it.z > pv.z)) pv = it; if (it.a >= endT - 0.01 && (!nx || it.a < nx.a)) nx = it; });
+      var oks = [pv, nx].filter(Boolean).map(function(it){ return it.ok; }), nOk = oks.filter(Boolean).length, c;
+      if (rbad[rs.abs]) { c = COL5.miss; R.restStray[rs.abs] = 1; }
+      else if (nowT < endT - 0.01) c = COL5.miss;
+      else if (!oks.length || nOk === oks.length) c = COL5.good;
+      else if (nOk > 0) c = COL5.lit;
+      else c = COL5.miss;
+      R.restColors[rs.abs] = c; });
   }
   function finishRun(){
     cancelAnimationFrame(raf); toneAll(); stopSched(); if (!R) return;
